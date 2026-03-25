@@ -8,61 +8,28 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-}
+body { background:#0f172a; color:white; font-family:Arial; margin:0; }
+.header { display:flex; justify-content:space-between; padding:15px; background:#1e293b; }
+.container { padding:20px; }
 
-.header {
-  padding: 15px;
-  background: #1e293b;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.card { background:#1e293b; padding:15px; border-radius:10px; margin-bottom:10px; }
 
-.container {
-  padding: 20px;
-}
-
-.kpi {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.card {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #334155;
+input, select {
+  padding:8px; margin:5px 0; width:100%;
+  border-radius:6px; border:none;
 }
 
 button {
-  padding: 6px 10px;
-  background: #22c55e;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  padding:8px 12px;
+  background:#22c55e;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin-top:5px;
 }
+
+table { width:100%; margin-top:10px; border-collapse:collapse; }
+td, th { padding:8px; border-bottom:1px solid #334155; }
 </style>
 </head>
 
@@ -75,23 +42,43 @@ button {
 
 <div class="container">
 
-  <div class="kpi">
-    <div class="card">Groups: <span id="groupsCount">0</span></div>
-    <div class="card">Active Tenants: <span id="activeTenants">0</span></div>
-    <div class="card">Transactions: <span id="transactionsCount">0</span></div>
+  <!-- CREATE GROUP -->
+  <div class="card">
+    <h3>Create Group</h3>
+    <input id="groupName" placeholder="Group Name (A-Z)">
+    <input id="rentAmount" placeholder="Rent Amount">
+    <button onclick="createGroup()">Create</button>
   </div>
 
-  <div class="section">
+  <!-- ADD TENANT -->
+  <div class="card">
+    <h3>Add Tenant</h3>
+    <input id="tenantName" placeholder="Tenant Name">
+    <input id="tenantPhone" placeholder="Phone">
+    <select id="groupSelect"></select>
+    <button onclick="addTenant()">Add Tenant</button>
+  </div>
+
+  <!-- ADD TRANSACTION -->
+  <div class="card">
+    <h3>Add Transaction</h3>
+    <select id="tenantSelect"></select>
+    <input id="amount" placeholder="Amount">
+    <button onclick="addTransaction()">Add Transaction</button>
+  </div>
+
+  <!-- DATA TABLES -->
+  <div class="card">
     <h3>Groups</h3>
     <table id="groupsTable"></table>
   </div>
 
-  <div class="section">
+  <div class="card">
     <h3>Tenants</h3>
     <table id="tenantsTable"></table>
   </div>
 
-  <div class="section">
+  <div class="card">
     <h3>Transactions</h3>
     <table id="transactionsTable"></table>
   </div>
@@ -104,14 +91,24 @@ const supabase = window.supabase.createClient(
   "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
 );
 
+let currentUser;
+
+async function init() {
+  const { data } = await supabase.auth.getUser();
+  currentUser = data.user;
+
+  if (!currentUser) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  loadData();
+}
+
 async function loadData() {
   const { data: groups } = await supabase.from("groups").select("*");
   const { data: tenants } = await supabase.from("tenants").select("*");
   const { data: transactions } = await supabase.from("transactions").select("*");
-
-  document.getElementById("groupsCount").innerText = groups.length;
-  document.getElementById("activeTenants").innerText = tenants.filter(t => t.is_active).length;
-  document.getElementById("transactionsCount").innerText = transactions.length;
 
   document.getElementById("groupsTable").innerHTML =
     "<tr><th>Name</th><th>Rent</th></tr>" +
@@ -119,11 +116,61 @@ async function loadData() {
 
   document.getElementById("tenantsTable").innerHTML =
     "<tr><th>Name</th><th>Status</th></tr>" +
-    tenants.map(t => `<tr><td>${t.tenant_name}</td><td>${t.is_active ? "Active" : "Inactive"}</td></tr>`).join("");
+    tenants.map(t => `<tr><td>${t.tenant_name}</td><td>${t.is_active ? "Active":"Inactive"}</td></tr>`).join("");
 
   document.getElementById("transactionsTable").innerHTML =
-    "<tr><th>Amount</th><th>Date</th></tr>" +
-    transactions.map(t => `<tr><td>${t.amount}</td><td>${t.payment_date}</td></tr>`).join("");
+    "<tr><th>Amount</th></tr>" +
+    transactions.map(t => `<tr><td>${t.amount}</td></tr>`).join("");
+
+  // populate dropdowns
+  document.getElementById("groupSelect").innerHTML =
+    groups.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
+
+  document.getElementById("tenantSelect").innerHTML =
+    tenants.map(t => `<option value="${t.id}">${t.tenant_name}</option>`).join("");
+}
+
+async function createGroup() {
+  const name = document.getElementById("groupName").value;
+  const rent = document.getElementById("rentAmount").value;
+
+  await supabase.from("groups").insert({
+    group_name: name,
+    rent_amount: rent,
+    created_by: currentUser.id
+  });
+
+  loadData();
+}
+
+async function addTenant() {
+  const name = document.getElementById("tenantName").value;
+  const phone = document.getElementById("tenantPhone").value;
+  const group = document.getElementById("groupSelect").value;
+
+  await supabase.from("tenants").insert({
+    tenant_name: name,
+    phone: phone,
+    group_id: group,
+    active_from: new Date().toISOString().split("T")[0],
+    created_by: currentUser.id
+  });
+
+  loadData();
+}
+
+async function addTransaction() {
+  const tenant = document.getElementById("tenantSelect").value;
+  const amount = document.getElementById("amount").value;
+
+  await supabase.from("transactions").insert({
+    tenant_id: tenant,
+    amount: amount,
+    payment_date: new Date().toISOString().split("T")[0],
+    created_by: currentUser.id
+  });
+
+  loadData();
 }
 
 async function logout() {
@@ -131,7 +178,7 @@ async function logout() {
   window.location.href = "index.html";
 }
 
-loadData();
+init();
 </script>
 
 </body>
