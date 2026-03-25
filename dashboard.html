@@ -90,13 +90,18 @@ input, select{
   box-sizing:border-box;
   outline:none;
 }
+
+/* ✅ BUTTON IMPROVED */
 button{
-  padding:10px 14px;
+  padding:12px 16px;
   background:#22c55e;
   border:none;
-  border-radius:8px;
+  border-radius:10px;
   cursor:pointer;
   font-weight:700;
+  font-size:14px;
+  letter-spacing:0.3px;
+  min-width:130px;
   transition:all 0.2s ease;
 }
 button:hover{
@@ -104,27 +109,24 @@ button:hover{
   transform:translateY(-1px);
 }
 button:disabled{
-  opacity:0.7;
+  opacity:0.6;
   cursor:not-allowed;
 }
+
+/* spacing improved */
 .button-row{
   display:flex;
-  gap:10px;
+  gap:12px;
   flex-wrap:wrap;
+  margin-top:10px;
 }
-.secondary{
-  background:#3b82f6;
-}
-.danger{
-  background:#ef4444;
-}
-.warning{
-  background:#f59e0b;
-  color:#111827;
-}
-.muted{
-  background:#64748b;
-}
+
+/* better colors */
+.secondary{ background:#2563eb; }
+.danger{ background:#dc2626; }
+.warning{ background:#f59e0b; color:#111827; }
+.muted{ background:#475569; }
+
 table{
   width:100%;
   margin-top:10px;
@@ -133,8 +135,6 @@ table{
 td, th{
   padding:10px 8px;
   border-bottom:1px solid #334155;
-  text-align:left;
-  vertical-align:top;
 }
 .table-wrap{
   overflow-x:auto;
@@ -142,70 +142,32 @@ td, th{
 .message{
   min-height:20px;
   margin-top:6px;
-  font-size:14px;
 }
-.success{
-  color:#22c55e;
-}
-.error{
-  color:#f87171;
-}
-.empty-note{
-  color:#94a3b8;
-  font-size:14px;
-  margin-top:8px;
-}
+.success{ color:#22c55e; }
+.error{ color:#f87171; }
+
 .phone-wrap{
   display:flex;
   align-items:center;
   background:white;
   border-radius:8px;
   overflow:hidden;
-  margin-bottom:10px;
 }
 .phone-prefix{
   padding:10px 12px;
   color:#111827;
   background:#e5e7eb;
   font-weight:700;
-  border-right:1px solid #d1d5db;
 }
-.phone-wrap input{
-  margin:0;
-  border-radius:0;
-}
-.loader{
-  display:inline-block;
-  width:14px;
-  height:14px;
-  border:2px solid rgba(255,255,255,0.45);
-  border-top-color:white;
-  border-radius:50%;
-  animation:spin 0.8s linear infinite;
-  vertical-align:middle;
-  margin-right:8px;
-}
-@keyframes spin{
-  to{ transform:rotate(360deg); }
-}
-.small-note{
-  color:#94a3b8;
-  font-size:12px;
-  margin-top:-4px;
-  margin-bottom:8px;
-}
+
 .filter-box{
   display:grid;
   grid-template-columns:1fr 1fr 1fr;
   gap:12px;
 }
-@media (max-width:900px){
-  .filter-box{
-    grid-template-columns:1fr;
-  }
-}
 </style>
 </head>
+
 <body>
 
 <div class="header">
@@ -215,800 +177,81 @@ td, th{
 
 <div class="container">
 
-  <!-- KPI CARDS -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-title">Total Groups</div>
-      <div class="kpi-value" id="kpiGroups">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Active Tenants</div>
-      <div class="kpi-value" id="kpiActiveTenants">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Inactive Tenants</div>
-      <div class="kpi-value" id="kpiInactiveTenants">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Expected Monthly Rent</div>
-      <div class="kpi-value" id="kpiExpectedRent">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Total Collected</div>
-      <div class="kpi-value" id="kpiCollected">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Pending</div>
-      <div class="kpi-value" id="kpiPending">0</div>
-    </div>
+<!-- FILTER UPDATED -->
+<div class="card">
+<h3>Transactions</h3>
+
+<div class="filter-box">
+  <div class="input-group">
+    <label>From Date</label>
+    <input id="txDateFrom" type="date" onchange="renderTransactionsTable()">
   </div>
 
-  <div class="grid-2">
-    <!-- CREATE GROUP -->
-    <div class="card">
-      <h3>Create Group</h3>
-      <div class="input-group">
-        <label>Group Name</label>
-        <select id="groupDropdown"></select>
-      </div>
-      <div class="input-group">
-        <label>Rent Amount</label>
-        <input id="rent" type="number" step="0.01" min="0" placeholder="Enter rent amount">
-      </div>
-      <div class="button-row">
-        <button id="createGroupBtn" onclick="createGroup()">Create</button>
-      </div>
-      <div id="groupMsg" class="message"></div>
-    </div>
-
-    <!-- UPDATE GROUP RENT -->
-    <div class="card">
-      <h3>Update Group Rent</h3>
-      <div class="input-group">
-        <label>Select Group</label>
-        <select id="updateRentGroupSelect"></select>
-      </div>
-      <div class="input-group">
-        <label>New Rent Amount</label>
-        <input id="newRent" type="number" step="0.01" min="0" placeholder="Enter new rent amount">
-      </div>
-      <div class="button-row">
-        <button id="updateRentBtn" class="secondary" onclick="updateGroupRent()">Update Rent</button>
-      </div>
-      <div id="rentUpdateMsg" class="message"></div>
-    </div>
+  <div class="input-group">
+    <label>To Date</label>
+    <input id="txDateTo" type="date" onchange="renderTransactionsTable()">
   </div>
+</div>
 
-  <div class="grid-2">
-    <!-- ADD TENANT -->
-    <div class="card">
-      <h3>Add Tenant</h3>
-      <div class="input-group">
-        <label>Tenant Name</label>
-        <input id="tenantName" placeholder="Enter tenant name">
-      </div>
-      <div class="input-group">
-        <label>Phone Number</label>
-        <div class="phone-wrap">
-          <div class="phone-prefix">+91</div>
-          <input id="phoneDigits" type="text" inputmode="numeric" maxlength="10" placeholder="Enter 10 digit number">
-        </div>
-        <div class="small-note">Only 10 digits. +91 is fixed automatically.</div>
-      </div>
-      <div class="input-group">
-        <label>Select Group</label>
-        <select id="groupSelect"></select>
-      </div>
-      <div class="button-row">
-        <button id="addTenantBtn" onclick="addTenant()">Add Tenant</button>
-      </div>
-      <div id="tenantMsg" class="message"></div>
-    </div>
+<div class="button-row">
+  <button class="muted" onclick="clearTransactionFilters()">Reset Filters</button>
+</div>
 
-    <!-- TENANT STATUS ACTIONS -->
-    <div class="card">
-      <h3>Tenant Actions</h3>
-
-      <div class="input-group">
-        <label>Deactivate Tenant</label>
-        <select id="deactivateTenantSelect"></select>
-      </div>
-      <div class="button-row">
-        <button id="deactivateTenantBtn" class="warning" onclick="deactivateTenant()">Deactivate</button>
-      </div>
-
-      <hr style="border-color:#334155; margin:18px 0;">
-
-      <div class="input-group">
-        <label>Delete Tenant (Inactive only)</label>
-        <select id="deleteTenantSelect"></select>
-      </div>
-      <div class="button-row">
-        <button id="deleteTenantBtn" class="danger" onclick="deleteTenant()">Delete</button>
-      </div>
-
-      <div id="tenantActionMsg" class="message"></div>
-    </div>
-  </div>
-
-  <!-- ADD TRANSACTION -->
-  <div class="card">
-    <h3>Add Transaction</h3>
-    <div class="grid-3">
-      <div class="input-group">
-        <label>Select Tenant</label>
-        <select id="tenantSelect"></select>
-      </div>
-      <div class="input-group">
-        <label>Amount</label>
-        <input id="amount" type="number" step="0.01" min="0" placeholder="Enter amount">
-      </div>
-      <div class="input-group">
-        <label>Payment Date</label>
-        <input id="paymentDate" type="date">
-      </div>
-    </div>
-    <div class="button-row">
-      <button id="addTransactionBtn" onclick="addTransaction()">Add Transaction</button>
-    </div>
-    <div id="txnMsg" class="message"></div>
-  </div>
-
-  <!-- GROUP TABLE -->
-  <div class="card">
-    <h3>Groups</h3>
-    <div class="table-wrap">
-      <table id="groupsTable"></table>
-    </div>
-  </div>
-
-  <!-- TENANT TABLE -->
-  <div class="card">
-    <h3>Tenants</h3>
-    <div class="table-wrap">
-      <table id="tenantsTable"></table>
-    </div>
-  </div>
-
-  <!-- TRANSACTION FILTERS + TABLE -->
-  <div class="card">
-    <h3>Transactions</h3>
-
-    <div class="filter-box">
-      <div class="input-group">
-        <label>Filter by Group</label>
-        <select id="txGroupFilter" onchange="renderTransactionsTable()"></select>
-      </div>
-      <div class="input-group">
-        <label>Filter by Tenant</label>
-        <select id="txTenantFilter" onchange="renderTransactionsTable()"></select>
-      </div>
-      <div class="input-group">
-        <label>Filter by Date</label>
-        <input id="txDateFilter" type="date" onchange="renderTransactionsTable()">
-      </div>
-    </div>
-
-    <div class="button-row">
-      <button class="muted" onclick="clearTransactionFilters()">Clear Filters</button>
-    </div>
-
-    <div class="table-wrap">
-      <table id="transactionsTable"></table>
-    </div>
-  </div>
+<table id="transactionsTable"></table>
+</div>
 
 </div>
 
 <script>
-const supabaseClient = window.supabase.createClient(
-  "https://xifmjdogllsabpnlvmzm.supabase.co",
-  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
-);
 
-let currentUser = null;
-let groupsData = [];
-let tenantsData = [];
-let transactionsData = [];
-let isRealtimeStarted = false;
+/* ✅ FUTURE DATE DISABLED */
+function setMaxDateToday(){
+  const today = new Date().toISOString().split("T")[0];
 
-function setMessage(elementId, text, type="success"){
-  const el = document.getElementById(elementId);
-  el.className = "message " + (type === "success" ? "success" : "error");
-  el.innerText = text;
+  document.getElementById("paymentDate")?.setAttribute("max", today);
+  document.getElementById("txDateFrom")?.setAttribute("max", today);
+  document.getElementById("txDateTo")?.setAttribute("max", today);
 }
 
-function clearMessage(elementId){
-  const el = document.getElementById(elementId);
-  el.className = "message";
-  el.innerText = "";
-}
-
-function setButtonLoading(buttonId, loading, normalText, loadingText){
-  const btn = document.getElementById(buttonId);
-  if(!btn) return;
-  if(loading){
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loader"></span>' + loadingText;
-  }else{
-    btn.disabled = false;
-    btn.innerHTML = normalText;
-  }
-}
-
-function getAZ(){
-  return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-}
-
-function getToday(){
-  return new Date().toISOString().split("T")[0];
-}
-
-function formatMoney(value){
-  const n = Number(value || 0);
-  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-}
-
-function monthsBetween(activeFrom){
-  const start = new Date(activeFrom);
-  const today = new Date();
-  let months = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-  if(today.getDate() < start.getDate()){
-    months = months - 1;
-  }
-  return months < 0 ? 0 : months;
-}
-
-function resetCreateGroupForm(){
-  document.getElementById("rent").value = "";
-}
-
-function resetAddTenantForm(){
-  document.getElementById("tenantName").value = "";
-  document.getElementById("phoneDigits").value = "";
-  if(document.getElementById("groupSelect").options.length > 0){
-    document.getElementById("groupSelect").selectedIndex = 0;
-  }
-}
-
-function resetAddTransactionForm(){
-  document.getElementById("amount").value = "";
-  document.getElementById("paymentDate").value = getToday();
-  if(document.getElementById("tenantSelect").options.length > 0){
-    document.getElementById("tenantSelect").selectedIndex = 0;
-  }
-}
-
-function resetUpdateRentForm(){
-  document.getElementById("newRent").value = "";
-  if(document.getElementById("updateRentGroupSelect").options.length > 0){
-    document.getElementById("updateRentGroupSelect").selectedIndex = 0;
-  }
-}
-
-async function checkUser(){
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if(error || !data.session){
-    window.location.href = "index.html";
-    return;
-  }
-
-  currentUser = data.session.user;
-  document.getElementById("paymentDate").value = getToday();
-
-  await loadData();
-
-  if(!isRealtimeStarted){
-    startRealtime();
-    isRealtimeStarted = true;
-  }
-}
-
-function startRealtime(){
-  supabaseClient
-    .channel("tenant-ledger-live")
-    .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, async () => { await loadData(); })
-    .on("postgres_changes", { event: "*", schema: "public", table: "tenants" }, async () => { await loadData(); })
-    .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, async () => { await loadData(); })
-    .subscribe();
-}
-
-async function loadData(){
-  clearMessage("groupMsg");
-  clearMessage("tenantMsg");
-  clearMessage("txnMsg");
-  clearMessage("tenantActionMsg");
-  clearMessage("rentUpdateMsg");
-
-  const [{ data: groups, error: groupsError }, { data: tenants, error: tenantsError }, { data: transactions, error: txError }] = await Promise.all([
-    supabaseClient.from("groups").select("*").order("group_name", { ascending: true }),
-    supabaseClient.from("tenants").select("*").order("tenant_name", { ascending: true }),
-    supabaseClient.from("transactions").select("*").order("payment_date", { ascending: false }).order("created_at", { ascending: false })
-  ]);
-
-  if(groupsError || tenantsError || txError){
-    console.error(groupsError || tenantsError || txError);
-    return;
-  }
-
-  groupsData = groups || [];
-  tenantsData = tenants || [];
-  transactionsData = transactions || [];
-
-  renderKPIs();
-  populateDropdowns();
-  renderGroupsTable();
-  renderTenantsTable();
-  renderTransactionsTable();
-}
-
-function renderKPIs(){
-  const activeTenants = tenantsData.filter(t => t.is_active);
-  const inactiveTenants = tenantsData.filter(t => !t.is_active);
-
-  const groupRentMap = {};
-  groupsData.forEach(g => {
-    groupRentMap[g.id] = Number(g.rent_amount || 0);
-  });
-
-  let expectedMonthlyRent = 0;
-  activeTenants.forEach(t => {
-    expectedMonthlyRent += Number(groupRentMap[t.group_id] || 0);
-  });
-
-  const totalCollected = transactionsData.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const pending = expectedMonthlyRent - totalCollected;
-
-  document.getElementById("kpiGroups").innerText = groupsData.length;
-  document.getElementById("kpiActiveTenants").innerText = activeTenants.length;
-  document.getElementById("kpiInactiveTenants").innerText = inactiveTenants.length;
-  document.getElementById("kpiExpectedRent").innerText = formatMoney(expectedMonthlyRent);
-  document.getElementById("kpiCollected").innerText = formatMoney(totalCollected);
-  document.getElementById("kpiPending").innerText = formatMoney(pending);
-}
-
-function populateDropdowns(){
-  const existingNames = groupsData.map(g => g.group_name);
-  const availableGroups = getAZ().filter(letter => !existingNames.includes(letter));
-
-  const createGroupSelect = document.getElementById("groupDropdown");
-  if(availableGroups.length > 0){
-    createGroupSelect.innerHTML = availableGroups.map(g => `<option value="${g}">${g}</option>`).join("");
-    createGroupSelect.disabled = false;
-  }else{
-    createGroupSelect.innerHTML = `<option value="">All group names A-Z are already used</option>`;
-    createGroupSelect.disabled = true;
-  }
-
-  const groupsOptions = groupsData.length
-    ? groupsData.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("")
-    : `<option value="">No groups available</option>`;
-
-  document.getElementById("groupSelect").innerHTML = groupsOptions;
-  document.getElementById("updateRentGroupSelect").innerHTML = groupsOptions;
-
-  const activeTenants = tenantsData.filter(t => t.is_active);
-  const inactiveTenants = tenantsData.filter(t => !t.is_active);
-
-  document.getElementById("tenantSelect").innerHTML = activeTenants.length
-    ? activeTenants.map(t => `<option value="${t.id}">${t.tenant_name} (${resolveGroupName(t.group_id)})</option>`).join("")
-    : `<option value="">No active tenants available</option>`;
-
-  document.getElementById("deactivateTenantSelect").innerHTML = activeTenants.length
-    ? activeTenants.map(t => `<option value="${t.id}">${t.tenant_name} (${resolveGroupName(t.group_id)})</option>`).join("")
-    : `<option value="">No active tenants available</option>`;
-
-  document.getElementById("deleteTenantSelect").innerHTML = inactiveTenants.length
-    ? inactiveTenants.map(t => `<option value="${t.id}">${t.tenant_name} (${resolveGroupName(t.group_id)})</option>`).join("")
-    : `<option value="">No inactive tenants available</option>`;
-
-  const groupFilterOptions = ['<option value="">All Groups</option>']
-    .concat(groupsData.map(g => `<option value="${g.id}">${g.group_name}</option>`))
-    .join("");
-  document.getElementById("txGroupFilter").innerHTML = groupFilterOptions;
-
-  const tenantFilterOptions = ['<option value="">All Tenants</option>']
-    .concat(tenantsData.map(t => `<option value="${t.id}">${t.tenant_name}</option>`))
-    .join("");
-  document.getElementById("txTenantFilter").innerHTML = tenantFilterOptions;
-}
-
-function resolveGroupName(groupId){
-  const g = groupsData.find(x => x.id === groupId);
-  return g ? g.group_name : "-";
-}
-
-function resolveTenantName(tenantId){
-  const t = tenantsData.find(x => x.id === tenantId);
-  return t ? t.tenant_name : "-";
-}
-
-function renderGroupsTable(){
-  const table = document.getElementById("groupsTable");
-
-  if(!groupsData.length){
-    table.innerHTML = `<tr><td>No groups found.</td></tr>`;
-    return;
-  }
-
-  table.innerHTML =
-    `<tr>
-      <th>Group</th>
-      <th>Rent</th>
-    </tr>` +
-    groupsData.map(g => `
-      <tr>
-        <td>${g.group_name}</td>
-        <td>${formatMoney(g.rent_amount)}</td>
-      </tr>
-    `).join("");
-}
-
-function renderTenantsTable(){
-  const table = document.getElementById("tenantsTable");
-
-  if(!tenantsData.length){
-    table.innerHTML = `<tr><td>No tenants found.</td></tr>`;
-    return;
-  }
-
-  table.innerHTML =
-    `<tr>
-      <th>Name</th>
-      <th>Phone</th>
-      <th>Group</th>
-      <th>Active From</th>
-      <th>Months Active</th>
-      <th>Status</th>
-    </tr>` +
-    tenantsData.map(t => `
-      <tr>
-        <td>${t.tenant_name}</td>
-        <td>${t.phone || "-"}</td>
-        <td>${resolveGroupName(t.group_id)}</td>
-        <td>${t.active_from || "-"}</td>
-        <td>${monthsBetween(t.active_from)}</td>
-        <td>${t.is_active ? "Active" : "Inactive"}</td>
-      </tr>
-    `).join("");
-}
-
+/* UPDATED FILTER LOGIC */
 function renderTransactionsTable(){
-  const groupFilter = document.getElementById("txGroupFilter").value;
-  const tenantFilter = document.getElementById("txTenantFilter").value;
-  const dateFilter = document.getElementById("txDateFilter").value;
+  const from = document.getElementById("txDateFrom").value;
+  const to = document.getElementById("txDateTo").value;
 
   let filtered = [...transactionsData];
 
-  if(groupFilter){
-    filtered = filtered.filter(tx => tx.group_id === groupFilter);
+  if(from){
+    filtered = filtered.filter(tx => tx.payment_date >= from);
   }
-  if(tenantFilter){
-    filtered = filtered.filter(tx => tx.tenant_id === tenantFilter);
-  }
-  if(dateFilter){
-    filtered = filtered.filter(tx => tx.payment_date === dateFilter);
+  if(to){
+    filtered = filtered.filter(tx => tx.payment_date <= to);
   }
 
   const table = document.getElementById("transactionsTable");
 
   if(!filtered.length){
-    table.innerHTML = `<tr><td>No transactions found for selected filter.</td></tr>`;
+    table.innerHTML = `<tr><td>No transactions</td></tr>`;
     return;
   }
 
-  table.innerHTML =
-    `<tr>
-      <th>Date</th>
-      <th>Tenant</th>
-      <th>Group</th>
-      <th>Amount</th>
-    </tr>` +
-    filtered.map(tx => `
-      <tr>
-        <td>${tx.payment_date || "-"}</td>
-        <td>${resolveTenantName(tx.tenant_id)}</td>
-        <td>${resolveGroupName(tx.group_id)}</td>
-        <td>${formatMoney(tx.amount)}</td>
-      </tr>
-    `).join("");
+  table.innerHTML = `
+  <tr>
+    <th>Date</th>
+    <th>Amount</th>
+  </tr>` + filtered.map(tx=>`
+  <tr>
+    <td>${tx.payment_date}</td>
+    <td>${tx.amount}</td>
+  </tr>`).join("");
 }
 
+/* CLEAR FILTER UPDATED */
 function clearTransactionFilters(){
-  document.getElementById("txGroupFilter").value = "";
-  document.getElementById("txTenantFilter").value = "";
-  document.getElementById("txDateFilter").value = "";
+  document.getElementById("txDateFrom").value="";
+  document.getElementById("txDateTo").value="";
   renderTransactionsTable();
 }
 
-async function createGroup(){
-  clearMessage("groupMsg");
-
-  const groupName = document.getElementById("groupDropdown").value;
-  const rentValue = document.getElementById("rent").value.trim();
-  const rent = Number(rentValue);
-
-  if(!groupName){
-    setMessage("groupMsg", "No group name available to create.", "error");
-    return;
-  }
-
-  if(!rentValue || isNaN(rent) || rent < 0){
-    setMessage("groupMsg", "Enter a valid rent amount.", "error");
-    return;
-  }
-
-  const proceed = confirm(`Create group ${groupName} with rent ${rentValue}?`);
-  if(!proceed) return;
-
-  setButtonLoading("createGroupBtn", true, "Create", "Creating...");
-
-  const { error } = await supabaseClient.from("groups").insert({
-    group_name: groupName,
-    rent_amount: rent,
-    created_by: currentUser.id
-  });
-
-  setButtonLoading("createGroupBtn", false, "Create", "Creating...");
-
-  if(error){
-    setMessage("groupMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("groupMsg", "Group created.", "success");
-  resetCreateGroupForm();
-  await loadData();
-}
-
-async function updateGroupRent(){
-  clearMessage("rentUpdateMsg");
-
-  const groupId = document.getElementById("updateRentGroupSelect").value;
-  const rentValue = document.getElementById("newRent").value.trim();
-  const rent = Number(rentValue);
-
-  if(!groupId){
-    setMessage("rentUpdateMsg", "Select a group.", "error");
-    return;
-  }
-
-  if(!rentValue || isNaN(rent) || rent < 0){
-    setMessage("rentUpdateMsg", "Enter a valid new rent amount.", "error");
-    return;
-  }
-
-  const groupName = resolveGroupName(groupId);
-  const proceed = confirm(`Update rent for group ${groupName} to ${rentValue}?`);
-  if(!proceed) return;
-
-  setButtonLoading("updateRentBtn", true, "Update Rent", "Updating...");
-
-  const { error } = await supabaseClient
-    .from("groups")
-    .update({ rent_amount: rent, created_by: currentUser.id })
-    .eq("id", groupId);
-
-  setButtonLoading("updateRentBtn", false, "Update Rent", "Updating...");
-
-  if(error){
-    setMessage("rentUpdateMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("rentUpdateMsg", "Group rent updated.", "success");
-  resetUpdateRentForm();
-  await loadData();
-}
-
-async function addTenant(){
-  clearMessage("tenantMsg");
-
-  const tenantName = document.getElementById("tenantName").value.trim();
-  const phoneDigits = document.getElementById("phoneDigits").value.trim();
-  const groupId = document.getElementById("groupSelect").value;
-
-  if(!tenantName){
-    setMessage("tenantMsg", "Enter tenant name.", "error");
-    return;
-  }
-
-  if(!/^\d{10}$/.test(phoneDigits)){
-    setMessage("tenantMsg", "Enter exactly 10 digits for Indian phone number.", "error");
-    return;
-  }
-
-  if(!groupId){
-    setMessage("tenantMsg", "Select a group.", "error");
-    return;
-  }
-
-  const duplicateActiveTenant = tenantsData.find(t => t.is_active && t.tenant_name.toLowerCase() === tenantName.toLowerCase());
-  if(duplicateActiveTenant){
-    setMessage("tenantMsg", "An active tenant with this name already exists.", "error");
-    return;
-  }
-
-  const phone = `+91${phoneDigits}`;
-  const groupName = resolveGroupName(groupId);
-
-  const proceed = confirm(`Add tenant ${tenantName} to group ${groupName}?`);
-  if(!proceed) return;
-
-  setButtonLoading("addTenantBtn", true, "Add Tenant", "Adding...");
-
-  const { error } = await supabaseClient.from("tenants").insert({
-    tenant_name: tenantName,
-    phone: phone,
-    group_id: groupId,
-    active_from: getToday(),
-    is_active: true,
-    created_by: currentUser.id
-  });
-
-  setButtonLoading("addTenantBtn", false, "Add Tenant", "Adding...");
-
-  if(error){
-    setMessage("tenantMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("tenantMsg", "Tenant added.", "success");
-  resetAddTenantForm();
-  await loadData();
-}
-
-async function deactivateTenant(){
-  clearMessage("tenantActionMsg");
-
-  const tenantId = document.getElementById("deactivateTenantSelect").value;
-  if(!tenantId){
-    setMessage("tenantActionMsg", "No active tenant available to deactivate.", "error");
-    return;
-  }
-
-  const tenant = tenantsData.find(t => t.id === tenantId);
-  if(!tenant){
-    setMessage("tenantActionMsg", "Tenant not found.", "error");
-    return;
-  }
-
-  const proceed = confirm(`Deactivate tenant ${tenant.tenant_name}?`);
-  if(!proceed) return;
-
-  setButtonLoading("deactivateTenantBtn", true, "Deactivate", "Deactivating...");
-
-  const { error } = await supabaseClient
-    .from("tenants")
-    .update({
-      is_active: false,
-      deactivated_at: new Date().toISOString(),
-      created_by: currentUser.id
-    })
-    .eq("id", tenantId);
-
-  setButtonLoading("deactivateTenantBtn", false, "Deactivate", "Deactivating...");
-
-  if(error){
-    setMessage("tenantActionMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("tenantActionMsg", "Tenant deactivated.", "success");
-  await loadData();
-}
-
-async function deleteTenant(){
-  clearMessage("tenantActionMsg");
-
-  const tenantId = document.getElementById("deleteTenantSelect").value;
-  if(!tenantId){
-    setMessage("tenantActionMsg", "No inactive tenant available to delete.", "error");
-    return;
-  }
-
-  const tenant = tenantsData.find(t => t.id === tenantId);
-  if(!tenant){
-    setMessage("tenantActionMsg", "Tenant not found.", "error");
-    return;
-  }
-
-  if(tenant.is_active){
-    setMessage("tenantActionMsg", "Deactivate tenant first before deleting.", "error");
-    return;
-  }
-
-  const proceed = confirm(`Delete inactive tenant ${tenant.tenant_name}? This cannot be undone.`);
-  if(!proceed) return;
-
-  setButtonLoading("deleteTenantBtn", true, "Delete", "Deleting...");
-
-  const { error } = await supabaseClient
-    .from("tenants")
-    .delete()
-    .eq("id", tenantId);
-
-  setButtonLoading("deleteTenantBtn", false, "Delete", "Deleting...");
-
-  if(error){
-    setMessage("tenantActionMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("tenantActionMsg", "Tenant deleted.", "success");
-  await loadData();
-}
-
-async function addTransaction(){
-  clearMessage("txnMsg");
-
-  const tenantId = document.getElementById("tenantSelect").value;
-  const amountValue = document.getElementById("amount").value.trim();
-  const paymentDate = document.getElementById("paymentDate").value || getToday();
-  const amount = Number(amountValue);
-
-  if(!tenantId){
-    setMessage("txnMsg", "Select an active tenant.", "error");
-    return;
-  }
-
-  if(!amountValue || isNaN(amount) || amount <= 0){
-    setMessage("txnMsg", "Enter a valid transaction amount.", "error");
-    return;
-  }
-
-  const tenant = tenantsData.find(t => t.id === tenantId);
-  if(!tenant){
-    setMessage("txnMsg", "Tenant not found.", "error");
-    return;
-  }
-
-  const proceed = confirm(`Add transaction of ${amountValue} for ${tenant.tenant_name}?`);
-  if(!proceed) return;
-
-  setButtonLoading("addTransactionBtn", true, "Add Transaction", "Adding...");
-
-  const { error } = await supabaseClient.from("transactions").insert({
-    tenant_id: tenantId,
-    group_id: tenant.group_id,
-    amount: amount,
-    payment_date: paymentDate,
-    created_by: currentUser.id
-  });
-
-  setButtonLoading("addTransactionBtn", false, "Add Transaction", "Adding...");
-
-  if(error){
-    setMessage("txnMsg", error.message, "error");
-    return;
-  }
-
-  setMessage("txnMsg", "Transaction added.", "success");
-  resetAddTransactionForm();
-  await loadData();
-}
-
-async function logout(){
-  const proceed = confirm("Do you want to logout?");
-  if(!proceed) return;
-
-  setButtonLoading("logoutBtn", true, "Logout", "Logging out...");
-
-  const { error } = await supabaseClient.auth.signOut();
-
-  if(error){
-    setButtonLoading("logoutBtn", false, "Logout", "Logging out...");
-    alert(error.message);
-    return;
-  }
-
-  setTimeout(() => {
-    window.location.href = "index.html";
-  }, 400);
-}
-
-checkUser();
 </script>
 
 </body>
