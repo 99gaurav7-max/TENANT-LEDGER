@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body { background:#0f172a; color:white; font-family:Arial; margin:0; }
 .header { display:flex; justify-content:space-between; padding:15px; background:#1e293b; }
 .container { padding:20px; }
-
-.card { background:#1e293b; padding:15px; border-radius:10px; margin-bottom:10px; }
+.card { background:#1e293b; padding:15px; border-radius:10px; margin-bottom:15px; }
 
 input, select {
-  padding:8px; margin:5px 0; width:100%;
+  padding:8px; width:100%; margin:5px 0;
   border-radius:6px; border:none;
 }
 
@@ -28,8 +25,13 @@ button {
   margin-top:5px;
 }
 
+button:hover { opacity:0.9; }
+
 table { width:100%; margin-top:10px; border-collapse:collapse; }
 td, th { padding:8px; border-bottom:1px solid #334155; }
+
+.success { color:#22c55e; }
+.error { color:red; }
 </style>
 </head>
 
@@ -42,131 +44,153 @@ td, th { padding:8px; border-bottom:1px solid #334155; }
 
 <div class="container">
 
-  <div class="card">
-    <h3>Create Group</h3>
-    <input id="groupName" placeholder="Group Name">
-    <input id="rentAmount" placeholder="Rent Amount">
-    <button onclick="createGroup()">Create</button>
-  </div>
+<div class="card">
+<h3>Create Group</h3>
+<select id="groupDropdown"></select>
+<input id="rent" type="number" step="0.01" placeholder="Rent Amount">
+<button onclick="createGroup()">Create</button>
+<div id="groupMsg"></div>
+</div>
 
-  <div class="card">
-    <h3>Add Tenant</h3>
-    <input id="tenantName" placeholder="Tenant Name">
-    <input id="tenantPhone" placeholder="Phone">
-    <select id="groupSelect"></select>
-    <button onclick="addTenant()">Add Tenant</button>
-  </div>
+<div class="card">
+<h3>Add Tenant</h3>
+<input id="tenantName" placeholder="Tenant Name">
+<input id="phone" placeholder="+91XXXXXXXXXX">
+<select id="groupSelect"></select>
+<button onclick="addTenant()">Add Tenant</button>
+<div id="tenantMsg"></div>
+</div>
 
-  <div class="card">
-    <h3>Add Transaction</h3>
-    <select id="tenantSelect"></select>
-    <input id="amount" placeholder="Amount">
-    <button onclick="addTransaction()">Add Transaction</button>
-  </div>
+<div class="card">
+<h3>Add Transaction</h3>
+<select id="tenantSelect"></select>
+<input id="amount" type="number" placeholder="Amount">
+<button onclick="addTransaction()">Add</button>
+<div id="txnMsg"></div>
+</div>
 
-  <div class="card">
-    <h3>Groups</h3>
-    <table id="groupsTable"></table>
-  </div>
+<div class="card">
+<h3>Groups</h3>
+<table id="groupsTable"></table>
+</div>
 
-  <div class="card">
-    <h3>Tenants</h3>
-    <table id="tenantsTable"></table>
-  </div>
-
-  <div class="card">
-    <h3>Transactions</h3>
-    <table id="transactionsTable"></table>
-  </div>
+<div class="card">
+<h3>Tenants</h3>
+<table id="tenantsTable"></table>
+</div>
 
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
-  "https://xifmjdogllsabpnlvmzm.supabase.co",
-  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
+const supabaseClient = window.supabase.createClient(
+"https://xifmjdogllsabpnlvmzm.supabase.co",
+"sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
 );
 
-// 🔥 Check login
-async function checkUser() {
-  const { data } = await supabase.auth.getSession();
-
-  if (!data.session) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  loadData();
+async function checkUser(){
+const {data}=await supabaseClient.auth.getSession();
+if(!data.session) window.location.href="index.html";
+else loadData();
 }
 checkUser();
 
-async function loadData() {
-  const { data: groups } = await supabase.from("groups").select("*");
-  const { data: tenants } = await supabase.from("tenants").select("*");
-  const { data: transactions } = await supabase.from("transactions").select("*");
-
-  document.getElementById("groupsTable").innerHTML =
-    "<tr><th>Name</th><th>Rent</th></tr>" +
-    groups.map(g => `<tr><td>${g.group_name}</td><td>${g.rent_amount}</td></tr>`).join("");
-
-  document.getElementById("tenantsTable").innerHTML =
-    "<tr><th>Name</th><th>Status</th></tr>" +
-    tenants.map(t => `<tr><td>${t.tenant_name}</td><td>${t.is_active ? "Active":"Inactive"}</td></tr>`).join("");
-
-  document.getElementById("transactionsTable").innerHTML =
-    "<tr><th>Amount</th></tr>" +
-    transactions.map(t => `<tr><td>${t.amount}</td></tr>`).join("");
-
-  document.getElementById("groupSelect").innerHTML =
-    groups.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
-
-  document.getElementById("tenantSelect").innerHTML =
-    tenants.map(t => `<option value="${t.id}">${t.tenant_name}</option>`).join("");
+function getAZ(){
+return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 }
 
-async function createGroup() {
-  const name = document.getElementById("groupName").value;
-  const rent = document.getElementById("rentAmount").value;
+async function loadData(){
+const {data:groups}=await supabaseClient.from("groups").select("*");
+const {data:tenants}=await supabaseClient.from("tenants").select("*");
 
-  await supabase.from("groups").insert({
-    group_name: name,
-    rent_amount: rent
-  });
+const existing=groups.map(g=>g.group_name);
 
-  loadData();
+document.getElementById("groupDropdown").innerHTML=
+getAZ().filter(g=>!existing.includes(g))
+.map(g=>`<option>${g}</option>`).join("");
+
+document.getElementById("groupSelect").innerHTML=
+groups.map(g=>`<option value="${g.id}">${g.group_name}</option>`).join("");
+
+document.getElementById("tenantSelect").innerHTML=
+tenants.map(t=>`<option value="${t.id}">${t.tenant_name}</option>`).join("");
+
+document.getElementById("groupsTable").innerHTML=
+"<tr><th>Group</th><th>Rent</th></tr>"+
+groups.map(g=>`<tr><td>${g.group_name}</td><td>${g.rent_amount}</td></tr>`).join("");
+
+document.getElementById("tenantsTable").innerHTML=
+"<tr><th>Name</th><th>Phone</th><th>Status</th></tr>"+
+tenants.map(t=>`
+<tr>
+<td>${t.tenant_name}</td>
+<td>${t.phone}</td>
+<td>${t.is_active?"Active":"Inactive"}</td>
+</tr>`).join("");
 }
 
-async function addTenant() {
-  const name = document.getElementById("tenantName").value;
-  const phone = document.getElementById("tenantPhone").value;
-  const group = document.getElementById("groupSelect").value;
+async function createGroup(){
+if(!confirm("Create this group?")) return;
 
-  await supabase.from("tenants").insert({
-    tenant_name: name,
-    phone: phone,
-    group_id: group,
-    active_from: new Date().toISOString().split("T")[0]
-  });
+const name=document.getElementById("groupDropdown").value;
+const rent=parseFloat(document.getElementById("rent").value);
 
-  loadData();
+if(!name||isNaN(rent)){
+document.getElementById("groupMsg").innerText="Invalid input";
+return;
 }
 
-async function addTransaction() {
-  const tenant = document.getElementById("tenantSelect").value;
-  const amount = document.getElementById("amount").value;
+await supabaseClient.from("groups").insert({group_name:name,rent_amount:rent});
 
-  await supabase.from("transactions").insert({
-    tenant_id: tenant,
-    amount: amount,
-    payment_date: new Date().toISOString().split("T")[0]
-  });
-
-  loadData();
+document.getElementById("groupMsg").innerText="Group created";
+loadData();
 }
 
-async function logout() {
-  await supabase.auth.signOut();
-  window.location.href = "index.html";
+async function addTenant(){
+if(!confirm("Add tenant?")) return;
+
+const name=document.getElementById("tenantName").value;
+const phone=document.getElementById("phone").value;
+const group=document.getElementById("groupSelect").value;
+
+if(!/^\+91\d{10}$/.test(phone)){
+document.getElementById("tenantMsg").innerText="Invalid phone format";
+return;
+}
+
+await supabaseClient.from("tenants").insert({
+tenant_name:name,
+phone:phone,
+group_id:group,
+active_from:new Date().toISOString().split("T")[0]
+});
+
+document.getElementById("tenantMsg").innerText="Tenant added";
+loadData();
+}
+
+async function addTransaction(){
+if(!confirm("Add transaction?")) return;
+
+const tenant=document.getElementById("tenantSelect").value;
+const amount=parseFloat(document.getElementById("amount").value);
+
+if(isNaN(amount)){
+document.getElementById("txnMsg").innerText="Invalid amount";
+return;
+}
+
+await supabaseClient.from("transactions").insert({
+tenant_id:tenant,
+amount:amount,
+payment_date:new Date().toISOString().split("T")[0]
+});
+
+document.getElementById("txnMsg").innerText="Transaction added";
+}
+
+async function logout(){
+await supabaseClient.auth.signOut();
+window.location.href="index.html";
 }
 </script>
 
