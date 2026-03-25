@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
+
+.header {
+  padding: 15px;
+  background: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.container {
+  padding: 20px;
+}
+
+.kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #334155;
+}
+
+button {
+  padding: 6px 10px;
+  background: #22c55e;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <div class="kpi">
+    <div class="card">Groups: <span id="groupsCount">0</span></div>
+    <div class="card">Active Tenants: <span id="activeTenants">0</span></div>
+    <div class="card">Transactions: <span id="transactionsCount">0</span></div>
+  </div>
+
+  <div class="section">
+    <h3>Groups</h3>
+    <table id="groupsTable"></table>
+  </div>
+
+  <div class="section">
+    <h3>Tenants</h3>
+    <table id="tenantsTable"></table>
+  </div>
+
+  <div class="section">
+    <h3>Transactions</h3>
+    <table id="transactionsTable"></table>
+  </div>
+
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://xifmjdogllsabpnlvmzm.supabase.co",
+  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
+);
+
+async function loadData() {
+  const { data: groups } = await supabase.from("groups").select("*");
+  const { data: tenants } = await supabase.from("tenants").select("*");
+  const { data: transactions } = await supabase.from("transactions").select("*");
+
+  document.getElementById("groupsCount").innerText = groups.length;
+  document.getElementById("activeTenants").innerText = tenants.filter(t => t.is_active).length;
+  document.getElementById("transactionsCount").innerText = transactions.length;
+
+  document.getElementById("groupsTable").innerHTML =
+    "<tr><th>Name</th><th>Rent</th></tr>" +
+    groups.map(g => `<tr><td>${g.group_name}</td><td>${g.rent_amount}</td></tr>`).join("");
+
+  document.getElementById("tenantsTable").innerHTML =
+    "<tr><th>Name</th><th>Status</th></tr>" +
+    tenants.map(t => `<tr><td>${t.tenant_name}</td><td>${t.is_active ? "Active" : "Inactive"}</td></tr>`).join("");
+
+  document.getElementById("transactionsTable").innerHTML =
+    "<tr><th>Amount</th><th>Date</th></tr>" +
+    transactions.map(t => `<tr><td>${t.amount}</td><td>${t.payment_date}</td></tr>`).join("");
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  window.location.href = "index.html";
+}
+
+loadData();
+</script>
+
+</body>
+</html>
