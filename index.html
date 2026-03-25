@@ -79,7 +79,13 @@ button:hover {
 <script>
 const supabase = window.supabase.createClient(
   "https://xifmjdogllsabpnlvmzm.supabase.co",
-  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
+  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  }
 );
 
 async function login() {
@@ -98,6 +104,6 @@ async function login() {
   }
 }
 </script>
-
+  
 </body>
 </html>
