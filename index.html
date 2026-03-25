@@ -64,14 +64,14 @@ button {
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
   "https://xifmjdogllsabpnlvmzm.supabase.co",
   "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
 );
 
-// 🔥 IMPORTANT: auto redirect if already logged in
+// auto redirect if already logged in
 async function checkSession() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await supabaseClient.auth.getSession();
   if (data.session) {
     window.location.href = "dashboard.html";
   }
@@ -82,7 +82,7 @@ async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabaseClient.auth.signInWithPassword({
     email,
     password
   });
