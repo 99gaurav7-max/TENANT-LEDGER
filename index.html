@@ -3,62 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tenant Management - Login</title>
+<title>Tenant Login</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
 .container {
-  background: #1e293b;
-  padding: 30px;
-  border-radius: 12px;
-  width: 320px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.4);
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
+  background:#1e293b;
+  padding:30px;
+  border-radius:10px;
+  width:320px;
 }
 
 input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border-radius: 6px;
-  border: none;
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border:none;
+  border-radius:5px;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  background: #22c55e;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-button:hover {
-  background: #16a34a;
+  width:100%;
+  padding:10px;
+  background:#22c55e;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
 }
 
 .error {
-  color: #f87171;
-  text-align: center;
-  margin-top: 10px;
+  color:red;
+  text-align:center;
 }
 </style>
 </head>
@@ -67,34 +54,37 @@ button:hover {
 
 <div class="container">
   <h2>Tenant Login</h2>
-  
+
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Password">
-  
+
   <button onclick="login()">Login</button>
-  
-  <div class="error" id="error"></div>
+
+  <div id="error" class="error"></div>
 </div>
 
 <script>
 const supabase = window.supabase.createClient(
   "https://xifmjdogllsabpnlvmzm.supabase.co",
-  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J",
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true
-    }
-  }
+  "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
 );
+
+// 🔥 IMPORTANT: auto redirect if already logged in
+async function checkSession() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    window.location.href = "dashboard.html";
+  }
+}
+checkSession();
 
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: password
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
   });
 
   if (error) {
@@ -104,6 +94,6 @@ async function login() {
   }
 }
 </script>
-  
+
 </body>
 </html>
