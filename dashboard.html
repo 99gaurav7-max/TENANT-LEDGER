@@ -42,15 +42,13 @@ td, th { padding:8px; border-bottom:1px solid #334155; }
 
 <div class="container">
 
-  <!-- CREATE GROUP -->
   <div class="card">
     <h3>Create Group</h3>
-    <input id="groupName" placeholder="Group Name (A-Z)">
+    <input id="groupName" placeholder="Group Name">
     <input id="rentAmount" placeholder="Rent Amount">
     <button onclick="createGroup()">Create</button>
   </div>
 
-  <!-- ADD TENANT -->
   <div class="card">
     <h3>Add Tenant</h3>
     <input id="tenantName" placeholder="Tenant Name">
@@ -59,7 +57,6 @@ td, th { padding:8px; border-bottom:1px solid #334155; }
     <button onclick="addTenant()">Add Tenant</button>
   </div>
 
-  <!-- ADD TRANSACTION -->
   <div class="card">
     <h3>Add Transaction</h3>
     <select id="tenantSelect"></select>
@@ -67,7 +64,6 @@ td, th { padding:8px; border-bottom:1px solid #334155; }
     <button onclick="addTransaction()">Add Transaction</button>
   </div>
 
-  <!-- DATA TABLES -->
   <div class="card">
     <h3>Groups</h3>
     <table id="groupsTable"></table>
@@ -91,19 +87,18 @@ const supabase = window.supabase.createClient(
   "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
 );
 
-let currentUser;
+// 🔥 Check login
+async function checkUser() {
+  const { data } = await supabase.auth.getSession();
 
-async function init() {
-  const { data } = await supabase.auth.getUser();
-  currentUser = data.user;
-
-  if (!currentUser) {
+  if (!data.session) {
     window.location.href = "index.html";
     return;
   }
 
   loadData();
 }
+checkUser();
 
 async function loadData() {
   const { data: groups } = await supabase.from("groups").select("*");
@@ -122,7 +117,6 @@ async function loadData() {
     "<tr><th>Amount</th></tr>" +
     transactions.map(t => `<tr><td>${t.amount}</td></tr>`).join("");
 
-  // populate dropdowns
   document.getElementById("groupSelect").innerHTML =
     groups.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
 
@@ -136,8 +130,7 @@ async function createGroup() {
 
   await supabase.from("groups").insert({
     group_name: name,
-    rent_amount: rent,
-    created_by: currentUser.id
+    rent_amount: rent
   });
 
   loadData();
@@ -152,8 +145,7 @@ async function addTenant() {
     tenant_name: name,
     phone: phone,
     group_id: group,
-    active_from: new Date().toISOString().split("T")[0],
-    created_by: currentUser.id
+    active_from: new Date().toISOString().split("T")[0]
   });
 
   loadData();
@@ -166,8 +158,7 @@ async function addTransaction() {
   await supabase.from("transactions").insert({
     tenant_id: tenant,
     amount: amount,
-    payment_date: new Date().toISOString().split("T")[0],
-    created_by: currentUser.id
+    payment_date: new Date().toISOString().split("T")[0]
   });
 
   loadData();
@@ -177,8 +168,6 @@ async function logout() {
   await supabase.auth.signOut();
   window.location.href = "index.html";
 }
-
-init();
 </script>
 
 </body>
