@@ -532,6 +532,29 @@ td, th{
     </div>
   </div>
 
+  <div class="card">
+  <h3>Utility Status</h3>
+
+  <div class="filter-box">
+    <div class="input-group">
+      <label>Filter by Group</label>
+      <select id="utilGroupFilter" onchange="renderUtilityTable()"></select>
+    </div>
+    <div class="input-group">
+      <label>From Date</label>
+      <input id="utilFromDate" type="date" onchange="renderUtilityTable()">
+    </div>
+    <div class="input-group">
+      <label>To Date</label>
+      <input id="utilToDate" type="date" onchange="renderUtilityTable()">
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="utilityTable"></table>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -758,6 +781,7 @@ async function loadData(){
   renderGroupsTable();
   renderTenantsTable();
   applyTransactionFilters();
+  renderUtilityTable();
 }
 
 function renderKPIs(){
@@ -829,6 +853,10 @@ function populateDropdowns(){
     .concat(tenantsData.map(t => `<option value="${t.id}">${t.tenant_name}</option>`))
     .join("");
   document.getElementById("txTenantFilter").innerHTML = tenantFilterOptions;
+
+  document.getElementById("utilGroupFilter").innerHTML =
+  '<option value="">All Groups</option>' +
+  groupsData.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
 }
 
 function resolveGroupName(groupId){
@@ -1109,7 +1137,7 @@ async function createGroup(){
     return;
   }
 
-  setMessage("groupMsg", "Group created.", "success");
+  setMessage("groupMsg", "Group rent updated successfully.", "success");
   resetCreateGroupForm();
   await loadData();
 }
@@ -1207,7 +1235,7 @@ async function addTenant(){
     return;
   }
 
-  setMessage("tenantMsg", "Tenant added.", "success");
+  setMessage("tenantMsg", "Tenant added successfully.", "success");
   resetAddTenantForm();
   await loadData();
 }
@@ -1248,7 +1276,7 @@ async function deactivateTenant(){
     return;
   }
 
-  setMessage("tenantActionMsg", "Tenant deactivated.", "success");
+  setMessage("tenantActionMsg", "Tenant deactivated successfully.", "success");
   await loadData();
 }
 
@@ -1289,7 +1317,7 @@ async function deleteTenant(){
     return;
   }
 
-  setMessage("tenantActionMsg", "Tenant deleted.", "success");
+  setMessage("tenantActionMsg", "Tenant deleted successfully.", "success");
   await loadData();
 }
 
@@ -1368,7 +1396,7 @@ async function addTransaction(){
     return;
   }
 
-  setMessage("txnMsg", "Transaction added.", "success");
+  setMessage("txnMsg", "Transaction added successfully.", "success");
   resetAddTransactionForm();
   await loadData();
 }
@@ -1392,6 +1420,82 @@ async function logout(){
   }, 400);
 }
 
+function renderUtilityTable(){
+  const table = document.getElementById("utilityTable");
+
+  const groupFilter = document.getElementById("utilGroupFilter").value;
+  const fromDate = document.getElementById("utilFromDate").value;
+  const toDate = document.getElementById("utilToDate").value;
+
+  let data = [...transactionsData];
+
+  if(groupFilter){
+    data = data.filter(tx => tx.group_id === groupFilter);
+  }
+  if(fromDate){
+    data = data.filter(tx => tx.payment_date >= fromDate);
+  }
+  if(toDate){
+    data = data.filter(tx => tx.payment_date <= toDate);
+  }
+
+  const grouped = {};
+
+  data.forEach(tx => {
+    const month = tx.payment_date?.slice(0,7);
+    const key = `${tx.group_id}_${month}`;
+
+    if(!grouped[key]){
+      grouped[key] = {
+        group: resolveGroupName(tx.group_id),
+        month: month,
+        electricity: 0,
+        water: 0
+      };
+    }
+
+    grouped[key].electricity += Number(tx.electricity_bill_amount || 0);
+    grouped[key].water += Number(tx.water_bill_amount || 0);
+  });
+
+  const rows = Object.values(grouped);
+
+  if(!rows.length){
+    table.innerHTML = `<tr><td>No utility data found.</td></tr>`;
+    return;
+  }
+
+  table.innerHTML =
+    `<tr>
+      <th>Group</th>
+      <th>Month</th>
+      <th>Electricity</th>
+      <th>Water</th>
+      <th>Status</th>
+    </tr>` +
+    rows.map(r => {
+
+      let status = "";
+      if(r.electricity > 0 && r.water > 0){
+        status = `<span class="badge badge-green">Cleared</span>`;
+      }else if(r.electricity > 0 || r.water > 0){
+        status = `<span class="badge badge-yellow">Partial</span>`;
+      }else{
+        status = `<span class="badge badge-red">Not Entered</span>`;
+      }
+
+      return `
+        <tr>
+          <td>${r.group}</td>
+          <td>${r.month}</td>
+          <td>${formatMoney(r.electricity)}</td>
+          <td>${formatMoney(r.water)}</td>
+          <td>${status}</td>
+        </tr>
+      `;
+    }).join("");
+}
+  
 checkUser();
 </script>
 
