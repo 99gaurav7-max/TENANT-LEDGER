@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 body{
@@ -106,7 +108,7 @@ input, select{
 button{
   padding:12px 16px;
   background:#22c55e;
-  color:#ffffff;   /* ✅ ADD THIS */
+  color:#ffffff;
   border:none;
   border-radius:10px;
   cursor:pointer;
@@ -132,19 +134,19 @@ button:disabled{
 }
 .secondary{
   background:#2563eb;
-  color:#ffffff;   /* ✅ */
+  color:#ffffff;
 }
 .danger{
   background:#dc2626;
-  color:#ffffff;   /* ✅ */
+  color:#ffffff;
 }
 .warning{
   background:#f59e0b;
-  color:#111827;   /* ✅ IMPORTANT (black text for yellow) */
+  color:#111827;
 }
 .muted{
   background:#475569;
-  color:#ffffff;   /* ✅ */
+  color:#ffffff;
 }
 table{
   width:100%;
@@ -215,13 +217,19 @@ td, th{
   grid-template-columns:repeat(6, 1fr);
   gap:12px;
 }
+.filter-box-2{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:12px;
+}
 @media (max-width:1200px){
   .filter-box{
     grid-template-columns:repeat(3, 1fr);
   }
 }
 @media (max-width:900px){
-  .filter-box{
+  .filter-box,
+  .filter-box-2{
     grid-template-columns:1fr;
   }
 }
@@ -287,6 +295,17 @@ td, th{
     <div id="propertyMsg" class="message"></div>
   </div>
 
+  <!-- REPORTS / REMINDERS -->
+  <div class="card">
+    <h3>Reports & Reminders</h3>
+    <div class="button-row">
+      <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">Download Monthly PDF Report</button>
+      <button id="emailReminderBtn" class="muted" onclick="sendReminderSummary()">Send Reminder Summary</button>
+    </div>
+    <div class="small-note">Reminder summary opens your default mail app addressed to the owner email. Fully automatic monthly email reminders need a scheduler outside dashboard.html.</div>
+    <div id="reportMsg" class="message"></div>
+  </div>
+
   <!-- KPI CARDS -->
   <div class="kpi-grid">
     <div class="kpi-card">
@@ -312,14 +331,6 @@ td, th{
     <div class="kpi-card">
       <div class="kpi-title">Pending Room Rent</div>
       <div class="kpi-value" id="kpiPendingRoomRent">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Collected Electricity Bills</div>
-      <div class="kpi-value" id="kpiCollectedElectricity">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Collected Water Bills</div>
-      <div class="kpi-value" id="kpiCollectedWater">0</div>
     </div>
   </div>
 
@@ -376,6 +387,10 @@ td, th{
         <div class="small-note">Only 10 digits. +91 is fixed automatically.</div>
       </div>
       <div class="input-group">
+        <label>Security Deposit</label>
+        <input id="securityDeposit" type="number" step="0.01" min="0.01" placeholder="Enter security deposit">
+      </div>
+      <div class="input-group">
         <label>Select Group</label>
         <select id="groupSelect"></select>
       </div>
@@ -385,7 +400,7 @@ td, th{
       <div id="tenantMsg" class="message"></div>
     </div>
 
-    <!-- TENANT STATUS ACTIONS -->
+    <!-- TENANT ACTIONS -->
     <div class="card">
       <h3>Tenant Actions</h3>
 
@@ -440,7 +455,7 @@ td, th{
       </div>
       <div class="input-group">
         <label>Amount</label>
-        <input id="transactionAmount" type="number" step="0.01" min="0" placeholder="Enter amount">
+        <input id="transactionAmount" type="number" step="0.01" min="0.01" placeholder="Enter amount">
       </div>
       <div class="input-group">
         <label>Payment Date</label>
@@ -461,9 +476,37 @@ td, th{
     </div>
   </div>
 
-  <!-- TENANT TABLE -->
+  <!-- UNPAID TENANT ALERT -->
+  <div class="card">
+    <h3>Unpaid Tenant Alert (Current Month Room Rent)</h3>
+    <div class="table-wrap">
+      <table id="unpaidTenantTable"></table>
+    </div>
+  </div>
+
+  <!-- TENANT FILTERS + TABLE -->
   <div class="card">
     <h3>Tenants</h3>
+
+    <div class="filter-box-2">
+      <div class="input-group">
+        <label>Filter by Group</label>
+        <select id="tenantGroupFilter" onchange="applyTenantFilters()"></select>
+      </div>
+      <div class="input-group">
+        <label>Filter by Status</label>
+        <select id="tenantStatusFilter" onchange="applyTenantFilters()">
+          <option value="">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="muted" onclick="clearTenantFilters()">Reset Tenant Filters</button>
+    </div>
+
     <div class="table-wrap">
       <table id="tenantsTable"></table>
     </div>
@@ -532,29 +575,6 @@ td, th{
     </div>
   </div>
 
-  <div class="card">
-  <h3>Utility Status</h3>
-
-  <div class="filter-box">
-    <div class="input-group">
-      <label>Filter by Group</label>
-      <select id="utilGroupFilter" onchange="renderUtilityTable()"></select>
-    </div>
-    <div class="input-group">
-      <label>From Date</label>
-      <input id="utilFromDate" type="date" onchange="renderUtilityTable()">
-    </div>
-    <div class="input-group">
-      <label>To Date</label>
-      <input id="utilToDate" type="date" onchange="renderUtilityTable()">
-    </div>
-  </div>
-
-  <div class="table-wrap">
-    <table id="utilityTable"></table>
-  </div>
-</div>
-
 </div>
 
 <script>
@@ -569,6 +589,7 @@ let groupsData = [];
 let tenantsData = [];
 let transactionsData = [];
 let filteredTransactions = [];
+let filteredTenants = [];
 let isRealtimeStarted = false;
 
 const TENANTS_PER_PAGE = 10;
@@ -653,6 +674,10 @@ function getCurrentMonthRange(){
   return { start, end };
 }
 
+function getCurrentMonthStart(){
+  return new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+}
+
 function resetCreateGroupForm(){
   document.getElementById("rent").value = "";
 }
@@ -660,6 +685,7 @@ function resetCreateGroupForm(){
 function resetAddTenantForm(){
   document.getElementById("tenantName").value = "";
   document.getElementById("phoneDigits").value = "";
+  document.getElementById("securityDeposit").value = "";
   if(document.getElementById("groupSelect").options.length > 0){
     document.getElementById("groupSelect").selectedIndex = 0;
   }
@@ -760,6 +786,7 @@ async function loadData(){
   clearMessage("txnMsg");
   clearMessage("tenantActionMsg");
   clearMessage("rentUpdateMsg");
+  clearMessage("reportMsg");
 
   const [{ data: groups, error: groupsError }, { data: tenants, error: tenantsError }, { data: transactions, error: txError }] = await Promise.all([
     supabaseClient.from("groups").select("*").order("group_name", { ascending: true }),
@@ -779,9 +806,9 @@ async function loadData(){
   renderKPIs();
   populateDropdowns();
   renderGroupsTable();
-  renderTenantsTable();
+  renderUnpaidTenantTable();
+  applyTenantFilters();
   applyTransactionFilters();
-  renderUtilityTable();
 }
 
 function renderKPIs(){
@@ -789,14 +816,10 @@ function renderKPIs(){
   const inactiveTenants = tenantsData.filter(t => !t.is_active);
 
   const expectedMonthlyRoomRent = groupsData.reduce((sum, g) => sum + Number(g.rent_amount || 0), 0);
+  const currentMonthStart = getCurrentMonthStart();
 
-  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
   const currentMonthTransactions = transactionsData.filter(tx => tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
-
   const collectedRoomRent = currentMonthTransactions.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
-  const collectedElectricity = currentMonthTransactions.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
-  const collectedWater = currentMonthTransactions.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
-
   const pendingRoomRent = expectedMonthlyRoomRent - collectedRoomRent;
 
   document.getElementById("kpiGroups").innerText = groupsData.length;
@@ -805,8 +828,6 @@ function renderKPIs(){
   document.getElementById("kpiExpectedRoomRent").innerText = formatMoney(expectedMonthlyRoomRent);
   document.getElementById("kpiCollectedRoomRent").innerText = formatMoney(collectedRoomRent);
   document.getElementById("kpiPendingRoomRent").innerText = formatMoney(pendingRoomRent);
-  document.getElementById("kpiCollectedElectricity").innerText = formatMoney(collectedElectricity);
-  document.getElementById("kpiCollectedWater").innerText = formatMoney(collectedWater);
 }
 
 function populateDropdowns(){
@@ -828,6 +849,8 @@ function populateDropdowns(){
 
   document.getElementById("groupSelect").innerHTML = groupsOptions;
   document.getElementById("updateRentGroupSelect").innerHTML = groupsOptions;
+  document.getElementById("tenantGroupFilter").innerHTML =
+    '<option value="">All Groups</option>' + groupsData.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
 
   const activeTenants = tenantsData.filter(t => t.is_active);
   const inactiveTenants = tenantsData.filter(t => !t.is_active);
@@ -853,10 +876,6 @@ function populateDropdowns(){
     .concat(tenantsData.map(t => `<option value="${t.id}">${t.tenant_name}</option>`))
     .join("");
   document.getElementById("txTenantFilter").innerHTML = tenantFilterOptions;
-
-  document.getElementById("utilGroupFilter").innerHTML =
-  '<option value="">All Groups</option>' +
-  groupsData.map(g => `<option value="${g.id}">${g.group_name}</option>`).join("");
 }
 
 function resolveGroupName(groupId){
@@ -876,6 +895,17 @@ function transactionAmountDisplay(tx){
   return 0;
 }
 
+function getGroupCurrentMonthSummary(groupId){
+  const currentMonthStart = getCurrentMonthStart();
+  const rows = transactionsData.filter(tx => tx.group_id === groupId && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
+
+  const roomRentPaid = rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+  const electricityPaid = rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
+  const waterPaid = rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
+
+  return { roomRentPaid, electricityPaid, waterPaid };
+}
+
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
@@ -888,20 +918,77 @@ function renderGroupsTable(){
     `<tr>
       <th>Group</th>
       <th>Monthly Room Rent</th>
+      <th>Room Rent Paid (Current Month)</th>
+      <th>Electricity Paid (Current Month)</th>
+      <th>Water Paid (Current Month)</th>
+      <th>Status</th>
     </tr>` +
-    groupsData.map(g => `
+    groupsData.map(g => {
+      const summary = getGroupCurrentMonthSummary(g.id);
+      const isPaid =
+        summary.roomRentPaid >= Number(g.rent_amount || 0) &&
+        summary.electricityPaid > 0 &&
+        summary.waterPaid > 0;
+
+      const status = isPaid
+        ? `<span class="badge badge-green">Paid</span>`
+        : `<span class="badge badge-red">Pending</span>`;
+
+      return `
       <tr>
         <td>${g.group_name}</td>
         <td>${formatMoney(g.rent_amount)}</td>
+        <td>${formatMoney(summary.roomRentPaid)}</td>
+        <td>${formatMoney(summary.electricityPaid)}</td>
+        <td>${formatMoney(summary.waterPaid)}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join("");
+}
+
+function renderUnpaidTenantTable(){
+  const table = document.getElementById("unpaidTenantTable");
+  const currentMonthStart = getCurrentMonthStart();
+
+  const unpaidActiveTenants = tenantsData.filter(t => {
+    if(!t.is_active) return false;
+    const roomRentPaid = transactionsData
+      .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
+      .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+    return roomRentPaid <= 0;
+  });
+
+  if(!unpaidActiveTenants.length){
+    table.innerHTML = `<tr><td>No unpaid active tenants for current month.</td></tr>`;
+    return;
+  }
+
+  table.innerHTML =
+    `<tr>
+      <th>Name</th>
+      <th>Group</th>
+      <th>Phone</th>
+      <th>Status</th>
+    </tr>` +
+    unpaidActiveTenants.map(t => `
+      <tr>
+        <td>${t.tenant_name}</td>
+        <td>${resolveGroupName(t.group_id)}</td>
+        <td>${t.phone || "-"}</td>
+        <td><span class="badge badge-red">No Room Rent This Month</span></td>
       </tr>
     `).join("");
 }
 
-function tenantCurrentMonthPaid(tenantId){
-  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
-  return transactionsData
-    .filter(tx => tx.tenant_id === tenantId && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
-    .reduce((sum, tx) => sum + transactionAmountDisplay(tx), 0);
+function tenantCurrentMonthBreakdown(tenantId){
+  const currentMonthStart = getCurrentMonthStart();
+  const rows = transactionsData.filter(tx => tx.tenant_id === tenantId && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
+
+  return {
+    roomRent: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
+    electricity: rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0),
+    water: rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0)
+  };
 }
 
 function tenantLatestPaymentDate(tenantId){
@@ -911,21 +998,39 @@ function tenantLatestPaymentDate(tenantId){
   return rows.length ? rows[0].payment_date : "-";
 }
 
+function applyTenantFilters(){
+  const groupFilter = document.getElementById("tenantGroupFilter").value;
+  const statusFilter = document.getElementById("tenantStatusFilter").value;
+
+  filteredTenants = [...tenantsData];
+
+  if(groupFilter){
+    filteredTenants = filteredTenants.filter(t => t.group_id === groupFilter);
+  }
+
+  if(statusFilter){
+    filteredTenants = filteredTenants.filter(t => statusFilter === "Active" ? t.is_active : !t.is_active);
+  }
+
+  tenantCurrentPage = 1;
+  renderTenantsTable();
+}
+
 function renderTenantsTable(){
   const table = document.getElementById("tenantsTable");
 
-  if(!tenantsData.length){
+  if(!filteredTenants.length){
     table.innerHTML = `<tr><td>No tenants found.</td></tr>`;
     document.getElementById("tenantPageInfo").innerText = "Page 1 of 1";
     return;
   }
 
-  const totalPages = Math.max(1, Math.ceil(tenantsData.length / TENANTS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredTenants.length / TENANTS_PER_PAGE));
   if(tenantCurrentPage > totalPages) tenantCurrentPage = totalPages;
   if(tenantCurrentPage < 1) tenantCurrentPage = 1;
 
   const start = (tenantCurrentPage - 1) * TENANTS_PER_PAGE;
-  const paged = tenantsData.slice(start, start + TENANTS_PER_PAGE);
+  const paged = filteredTenants.slice(start, start + TENANTS_PER_PAGE);
 
   table.innerHTML =
     `<tr>
@@ -934,16 +1039,19 @@ function renderTenantsTable(){
       <th>Group</th>
       <th>Active From</th>
       <th>Months Active</th>
-      <th>This Month Paid</th>
+      <th>Security Deposit</th>
+      <th>Room Rent (Current Month)</th>
+      <th>Electricity (Current Month)</th>
+      <th>Water (Current Month)</th>
       <th>Last Payment Date</th>
       <th>Status</th>
     </tr>` +
     paged.map(t => {
-      const paidThisMonth = tenantCurrentMonthPaid(t.id);
+      const breakdown = tenantCurrentMonthBreakdown(t.id);
       const latestPayment = tenantLatestPaymentDate(t.id);
-      const paymentBadge = paidThisMonth > 0
-        ? `<span class="badge badge-green">Payment Recorded</span>`
-        : `<span class="badge badge-red">No Payment This Month</span>`;
+      const statusBadge = t.is_active
+        ? `<span class="badge badge-green">Active</span>`
+        : `<span class="badge badge-yellow">Inactive</span>`;
 
       return `
       <tr>
@@ -952,9 +1060,12 @@ function renderTenantsTable(){
         <td>${resolveGroupName(t.group_id)}</td>
         <td>${t.active_from || "-"}</td>
         <td>${monthsBetween(t.active_from)}</td>
-        <td>${formatMoney(paidThisMonth)}</td>
+        <td>${formatMoney(t.security_deposit)}</td>
+        <td>${formatMoney(breakdown.roomRent)}</td>
+        <td>${formatMoney(breakdown.electricity)}</td>
+        <td>${formatMoney(breakdown.water)}</td>
         <td>${latestPayment}</td>
-        <td>${t.is_active ? paymentBadge : `<span class="badge badge-yellow">Inactive</span>`}</td>
+        <td>${statusBadge}</td>
       </tr>`;
     }).join("");
 
@@ -1040,7 +1151,7 @@ function renderTransactionsTable(){
 }
 
 function changeTenantPage(direction){
-  const totalPages = Math.max(1, Math.ceil(tenantsData.length / TENANTS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredTenants.length / TENANTS_PER_PAGE));
   tenantCurrentPage += direction;
   if(tenantCurrentPage < 1) tenantCurrentPage = 1;
   if(tenantCurrentPage > totalPages) tenantCurrentPage = totalPages;
@@ -1053,6 +1164,12 @@ function changeTransactionPage(direction){
   if(transactionCurrentPage < 1) transactionCurrentPage = 1;
   if(transactionCurrentPage > totalPages) transactionCurrentPage = totalPages;
   renderTransactionsTable();
+}
+
+function clearTenantFilters(){
+  document.getElementById("tenantGroupFilter").value = "";
+  document.getElementById("tenantStatusFilter").value = "";
+  applyTenantFilters();
 }
 
 function clearTransactionFilters(){
@@ -1098,7 +1215,7 @@ async function savePropertyName(){
     return;
   }
 
-  setMessage("propertyMsg", "Property name saved.", "success");
+  setMessage("propertyMsg", "Property name saved successfully", "success");
   await loadOwner();
 }
 
@@ -1137,7 +1254,7 @@ async function createGroup(){
     return;
   }
 
-  setMessage("groupMsg", "Group rent updated successfully.", "success");
+  setMessage("groupMsg", "Group created successfully", "success");
   resetCreateGroupForm();
   await loadData();
 }
@@ -1177,7 +1294,7 @@ async function updateGroupRent(){
     return;
   }
 
-  setMessage("rentUpdateMsg", "Group room rent updated.", "success");
+  setMessage("rentUpdateMsg", "Group rent updated successfully", "success");
   resetUpdateRentForm();
   await loadData();
 }
@@ -1188,6 +1305,8 @@ async function addTenant(){
   const rawTenantName = document.getElementById("tenantName").value.trim();
   const tenantName = normalizeName(rawTenantName);
   const phoneDigits = document.getElementById("phoneDigits").value.trim();
+  const securityDepositValue = document.getElementById("securityDeposit").value.trim();
+  const securityDeposit = Number(securityDepositValue);
   const groupId = document.getElementById("groupSelect").value;
 
   if(!tenantName){
@@ -1197,6 +1316,11 @@ async function addTenant(){
 
   if(!/^\d{10}$/.test(phoneDigits)){
     setMessage("tenantMsg", "Enter exactly 10 digits for Indian phone number.", "error");
+    return;
+  }
+
+  if(!securityDepositValue || isNaN(securityDeposit) || securityDeposit <= 0){
+    setMessage("tenantMsg", "Enter a valid security deposit.", "error");
     return;
   }
 
@@ -1224,6 +1348,7 @@ async function addTenant(){
     phone: phone,
     group_id: groupId,
     active_from: getToday(),
+    security_deposit: securityDeposit,
     is_active: true,
     created_by: currentUser.id
   });
@@ -1235,7 +1360,7 @@ async function addTenant(){
     return;
   }
 
-  setMessage("tenantMsg", "Tenant added successfully.", "success");
+  setMessage("tenantMsg", "Tenant added successfully", "success");
   resetAddTenantForm();
   await loadData();
 }
@@ -1276,7 +1401,7 @@ async function deactivateTenant(){
     return;
   }
 
-  setMessage("tenantActionMsg", "Tenant deactivated successfully.", "success");
+  setMessage("tenantActionMsg", "Tenant deactivated successfully", "success");
   await loadData();
 }
 
@@ -1317,7 +1442,7 @@ async function deleteTenant(){
     return;
   }
 
-  setMessage("tenantActionMsg", "Tenant deleted successfully.", "success");
+  setMessage("tenantActionMsg", "Tenant deleted successfully", "success");
   await loadData();
 }
 
@@ -1396,9 +1521,110 @@ async function addTransaction(){
     return;
   }
 
-  setMessage("txnMsg", "Transaction added successfully.", "success");
+  setMessage("txnMsg", "Transaction recorded successfully", "success");
   resetAddTransactionForm();
   await loadData();
+}
+
+function getReminderSummaryLines(){
+  const currentMonthStart = getCurrentMonthStart();
+
+  const unpaidActiveTenants = tenantsData.filter(t => {
+    if(!t.is_active) return false;
+    const roomRentPaid = transactionsData
+      .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
+      .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+    return roomRentPaid <= 0;
+  });
+
+  return unpaidActiveTenants.map(t => `- ${t.tenant_name} | Group ${resolveGroupName(t.group_id)} | ${t.phone || "-"}`);
+}
+
+function sendReminderSummary(){
+  clearMessage("reportMsg");
+
+  if(!ownerRow?.email){
+    setMessage("reportMsg", "Owner email not found.", "error");
+    return;
+  }
+
+  const lines = getReminderSummaryLines();
+  const subject = encodeURIComponent(`Unpaid Tenant Summary - ${ownerRow.property_name || "Property"} - ${getToday()}`);
+  const body = encodeURIComponent(
+    `Owner Reminder Summary\n\nProperty: ${ownerRow.property_name || "-"}\nDate: ${getToday()}\n\nUnpaid Room Rent Tenants (Current Month):\n` +
+    (lines.length ? lines.join("\n") : "No unpaid active tenants for current month.")
+  );
+
+  window.location.href = `mailto:${ownerRow.email}?subject=${subject}&body=${body}`;
+  setMessage("reportMsg", "Reminder email draft opened successfully", "success");
+}
+
+function downloadMonthlyPdfReport(){
+  clearMessage("reportMsg");
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const monthRange = getCurrentMonthRange();
+
+    doc.setFontSize(16);
+    doc.text(`Monthly Report - ${ownerRow?.property_name || "Property"}`, 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${getToday()}`, 14, 26);
+    doc.text(`Month Range: ${monthRange.start} to ${monthRange.end}`, 14, 32);
+
+    const groupRows = groupsData.map(g => {
+      const summary = getGroupCurrentMonthSummary(g.id);
+      const status = (
+        summary.roomRentPaid >= Number(g.rent_amount || 0) &&
+        summary.electricityPaid > 0 &&
+        summary.waterPaid > 0
+      ) ? "Paid" : "Pending";
+
+      return [
+        g.group_name,
+        formatMoney(g.rent_amount),
+        formatMoney(summary.roomRentPaid),
+        formatMoney(summary.electricityPaid),
+        formatMoney(summary.waterPaid),
+        status
+      ];
+    });
+
+    doc.autoTable({
+      startY: 38,
+      head: [["Group", "Monthly Room Rent", "Room Rent Paid", "Electricity Paid", "Water Paid", "Status"]],
+      body: groupRows
+    });
+
+    const currentMonthStart = getCurrentMonthStart();
+    const tenantRows = tenantsData.map(t => {
+      const roomRentPaid = transactionsData
+        .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
+        .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+
+      return [
+        t.tenant_name,
+        resolveGroupName(t.group_id),
+        t.phone || "-",
+        formatMoney(t.security_deposit),
+        formatMoney(roomRentPaid),
+        roomRentPaid > 0 ? "Paid" : "Unpaid"
+      ];
+    });
+
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 12,
+      head: [["Tenant", "Group", "Phone", "Security Deposit", "Room Rent Paid (Current Month)", "Status"]],
+      body: tenantRows
+    });
+
+    doc.save(`monthly_report_${getToday()}.pdf`);
+    setMessage("reportMsg", "Monthly PDF report downloaded successfully", "success");
+  }catch(error){
+    console.error(error);
+    setMessage("reportMsg", "Unable to generate PDF report.", "error");
+  }
 }
 
 async function logout(){
@@ -1420,82 +1646,6 @@ async function logout(){
   }, 400);
 }
 
-function renderUtilityTable(){
-  const table = document.getElementById("utilityTable");
-
-  const groupFilter = document.getElementById("utilGroupFilter").value;
-  const fromDate = document.getElementById("utilFromDate").value;
-  const toDate = document.getElementById("utilToDate").value;
-
-  let data = [...transactionsData];
-
-  if(groupFilter){
-    data = data.filter(tx => tx.group_id === groupFilter);
-  }
-  if(fromDate){
-    data = data.filter(tx => tx.payment_date >= fromDate);
-  }
-  if(toDate){
-    data = data.filter(tx => tx.payment_date <= toDate);
-  }
-
-  const grouped = {};
-
-  data.forEach(tx => {
-    const month = tx.payment_date?.slice(0,7);
-    const key = `${tx.group_id}_${month}`;
-
-    if(!grouped[key]){
-      grouped[key] = {
-        group: resolveGroupName(tx.group_id),
-        month: month,
-        electricity: 0,
-        water: 0
-      };
-    }
-
-    grouped[key].electricity += Number(tx.electricity_bill_amount || 0);
-    grouped[key].water += Number(tx.water_bill_amount || 0);
-  });
-
-  const rows = Object.values(grouped);
-
-  if(!rows.length){
-    table.innerHTML = `<tr><td>No utility data found.</td></tr>`;
-    return;
-  }
-
-  table.innerHTML =
-    `<tr>
-      <th>Group</th>
-      <th>Month</th>
-      <th>Electricity</th>
-      <th>Water</th>
-      <th>Status</th>
-    </tr>` +
-    rows.map(r => {
-
-      let status = "";
-      if(r.electricity > 0 && r.water > 0){
-        status = `<span class="badge badge-green">Cleared</span>`;
-      }else if(r.electricity > 0 || r.water > 0){
-        status = `<span class="badge badge-yellow">Partial</span>`;
-      }else{
-        status = `<span class="badge badge-red">Not Entered</span>`;
-      }
-
-      return `
-        <tr>
-          <td>${r.group}</td>
-          <td>${r.month}</td>
-          <td>${formatMoney(r.electricity)}</td>
-          <td>${formatMoney(r.water)}</td>
-          <td>${status}</td>
-        </tr>
-      `;
-    }).join("");
-}
-  
 checkUser();
 </script>
 
