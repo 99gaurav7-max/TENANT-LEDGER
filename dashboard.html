@@ -133,12 +133,17 @@ button:disabled{
   margin-top:10px;
 }
 .button-row button{
-  flex:1 1 220px;   /* responsive width */
-  min-width:220px;
+  flex:1 1 280px;   /* wider base */
+  max-width:100%;
+  height:44px;      /* FIXED HEIGHT → no stretching */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
 }
 .secondary{
-  background:#2563eb;
-  color:#000;   /* 👈 FIX FOR MOBILE TEXT ISSUE */
+  background:#3b82f6;
+  color:#000;
   font-weight:600;
 }
 .danger{
@@ -151,7 +156,7 @@ button:disabled{
 }
 .muted{
   background:#64748b;
-  color:#000;   /* 👈 FIX FOR MOBILE TEXT ISSUE */
+  color:#000;
   font-weight:600;
 }
 table{
@@ -213,10 +218,10 @@ td, th{
   to{ transform:rotate(360deg); }
 }
 .small-note{
-  color:#94a3b8;
+  margin-top:12px;   /* PUSH DOWN */
   font-size:12px;
-  margin-top:-4px;
-  margin-bottom:8px;
+  color:#94a3b8;
+  line-height:1.5;
 }
 .filter-box{
   display:grid;
