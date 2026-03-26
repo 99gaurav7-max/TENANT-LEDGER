@@ -132,9 +132,14 @@ button:disabled{
   flex-wrap:wrap;
   margin-top:10px;
 }
+.button-row button{
+  flex:1 1 220px;   /* responsive width */
+  min-width:220px;
+}
 .secondary{
   background:#2563eb;
-  color:#ffffff;
+  color:#000;   /* 👈 FIX FOR MOBILE TEXT ISSUE */
+  font-weight:600;
 }
 .danger{
   background:#dc2626;
@@ -145,8 +150,9 @@ button:disabled{
   color:#111827;
 }
 .muted{
-  background:#475569;
-  color:#ffffff;
+  background:#64748b;
+  color:#000;   /* 👈 FIX FOR MOBILE TEXT ISSUE */
+  font-weight:600;
 }
 table{
   width:100%;
