@@ -675,26 +675,38 @@ html {
 </div>
 
 <script>
+/* =========================
+   NAV CLICK OUTSIDE CLOSE
+========================= */
 document.addEventListener("click", function(e){
   const nav = document.getElementById("navMenu");
   const hamburger = document.querySelector(".hamburger");
+
+  if (!nav || !hamburger) return;
 
   if (!nav.contains(e.target) && !hamburger.contains(e.target)) {
     nav.classList.remove("active");
   }
 });
-  
+
+/* =========================
+   TOGGLE NAV
+========================= */
 function toggleNav(){
   const menu = document.getElementById("navMenu");
+  if (!menu) return;
   menu.classList.toggle("active");
 }
 
-/* SMOOTH SCROLL */
+/* =========================
+   SMOOTH SCROLL (OFFSET SAFE)
+========================= */
 function scrollToSection(id){
   const el = document.getElementById(id);
   if(!el) return;
 
-  const headerOffset = document.querySelector(".header")?.offsetHeight || 80;
+  const header = document.querySelector(".header");
+  const headerOffset = header ? header.offsetHeight : 80;
 
   const y = el.getBoundingClientRect().top + window.pageYOffset - headerOffset - 10;
 
@@ -703,9 +715,13 @@ function scrollToSection(id){
     behavior: "smooth"
   });
 
-  document.getElementById("navMenu").classList.remove("active");
+  const nav = document.getElementById("navMenu");
+  if (nav) nav.classList.remove("active");
 }
 
+/* =========================
+   SECTION TRACKING
+========================= */
 const sections = [
   "reportSection",
   "kpiSection",
@@ -714,6 +730,9 @@ const sections = [
   "transactionsSection"
 ];
 
+/* =========================
+   ACTIVE NAV HIGHLIGHT
+========================= */
 window.addEventListener("scroll", () => {
   let current = "";
 
@@ -728,19 +747,9 @@ window.addEventListener("scroll", () => {
     }
   });
 
-  document.querySelectorAll(".nav-menu div").forEach(item => {
-    item.classList.remove("active-nav");
-  });
+  const navItems = document.querySelectorAll(".nav-menu div");
 
-  if (current) {
-    const activeItem = document.querySelector(
-      `.nav-menu div[data-target="${current}"]`
-    );
-    if (activeItem) activeItem.classList.add("active-nav");
-  }
-});
-
-  document.querySelectorAll(".nav-menu div").forEach(item => {
+  navItems.forEach(item => {
     item.classList.remove("active-nav");
   });
 
