@@ -658,9 +658,14 @@ html {
       </div>
     </div>
 
-    <div class="button-row">
-      <button class="muted" onclick="clearTransactionFilters()">Reset Filters</button>
-    </div>
+  <div class="button-row">
+    <button class="muted" onclick="clearTransactionFilters()">Reset Filters</button>
+
+  <!-- ✅ NEW BUTTON -->
+    <button class="secondary" onclick="downloadTransactionPdf()" id="downloadTxnPdfBtn">
+      Download Transactions PDF
+    </button>
+  </div>
 
     <div class="table-wrap">
       <table id="transactionsTable"></table>
@@ -1782,11 +1787,11 @@ function downloadMonthlyPdfReport(){
       );
 
       const electricityPaid = tenantTx.reduce(
-        (sum, tx) => sum + Number(tx.electricity_amount || 0), 0
+        (sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0
       );
-
+      
       const waterPaid = tenantTx.reduce(
-        (sum, tx) => sum + Number(tx.water_amount || 0), 0
+        (sum, tx) => sum + Number(tx.water_bill_amount || 0), 0
       );
 
       const status = (
@@ -1795,10 +1800,14 @@ function downloadMonthlyPdfReport(){
         waterPaid > 0
       ) ? "Paid" : "Unpaid";
 
+      // ✅ NEW LINE
+      const activeStatus = t.is_active ? "Active" : "Inactive";
+
       return [
         t.tenant_name,
         resolveGroupName(t.group_id),
         t.phone || "-",
+        activeStatus, // ✅ NEW COLUMN
         formatMoney(t.security_deposit),
         formatMoney(t.rent_amount || 0),
         formatMoney(roomRentPaid),
@@ -1808,21 +1817,63 @@ function downloadMonthlyPdfReport(){
       ];
     });
 
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 12,
-      head: [[
-        "Tenant Name",
-        "Group",
-        "Phone",
-        "Security Deposit",
-        "Room Rent",
-        "Room Rent Paid",
-        "Electricity Paid",
-        "Water Paid",
-        "Status"
-      ]],
-      body: tenantRows
-    });
+doc.autoTable({
+  startY: doc.lastAutoTable.finalY + 12,
+
+  head: [[
+    "Tenant Name",
+    "Group",
+    "Phone",
+    "Active Status",
+    "Security Deposit",
+    "Room Rent",
+    "Room Rent Paid",
+    "Electricity Paid",
+    "Water Paid",
+    "Status"
+  ]],
+
+  body: tenantRows,
+
+  styles: {
+    fontSize: 8,
+    cellPadding: 3
+  },
+
+  headStyles: {
+    fillColor: [30, 41, 59], // dark blue
+    textColor: 255
+  },
+
+  columnStyles: {
+    4: { halign: 'right' },
+    5: { halign: 'right' },
+    6: { halign: 'right' },
+    7: { halign: 'right' },
+    8: { halign: 'right' }
+  },
+
+  didParseCell: function (data) {
+
+    // Active Status column
+    if (data.column.index === 3 && data.cell.section === 'body') {
+      if (data.cell.raw === "Active") {
+        data.cell.styles.textColor = [34, 197, 94]; // green
+      } else {
+        data.cell.styles.textColor = [239, 68, 68]; // red
+      }
+    }
+
+    // Payment Status column
+    if (data.column.index === 9 && data.cell.section === 'body') {
+      if (data.cell.raw === "Paid") {
+        data.cell.styles.textColor = [34, 197, 94]; // green
+      } else {
+        data.cell.styles.textColor = [245, 158, 11]; // orange
+      }
+    }
+  }
+});
 
     doc.save(`monthly_report_${getToday()}.pdf`);
     setMessage("reportMsg", "Monthly PDF report downloaded successfully", "success");
@@ -1832,6 +1883,105 @@ function downloadMonthlyPdfReport(){
     setMessage("reportMsg", "Unable to generate PDF report.", "error");
   }
 }
+
+function downloadTransactionPdf(){
+  clearMessage("reportMsg");
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // ✅ Sort: latest → oldest
+    const sortedTx = [...filteredTransactions].sort((a, b) =>
+      (b.payment_date || "").localeCompare(a.payment_date || "")
+    );
+
+    // ✅ Capture current filters
+    const groupFilter = document.getElementById("txGroupFilter").value;
+    const tenantFilter = document.getElementById("txTenantFilter").value;
+    const dateFrom = document.getElementById("txDateFrom").value;
+    const dateTo = document.getElementById("txDateTo").value;
+    const billTypeFilter = document.getElementById("txBillTypeFilter").value;
+    const paymentModeFilter = document.getElementById("txPaymentModeFilter").value;
+
+    // Resolve readable names
+    const groupName = groupFilter ? resolveGroupName(groupFilter) : "All";
+    const tenantName = tenantFilter ? resolveTenantName(tenantFilter) : "All";
+    
+    doc.setFontSize(16);
+    doc.text(`Transactions Report - ${ownerRow?.property_name || "Property"}`, 14, 18);
+
+    doc.setFontSize(10);
+
+    doc.text(`Generated on: ${getToday()}`, 14, 26);
+    doc.text(`Total Records: ${sortedTx.length}`, 14, 32);
+
+    // ✅ Filter Summary
+    doc.text(`Filters Applied:`, 14, 40);
+
+    doc.text(`Group: ${groupName}`, 14, 46);
+    doc.text(`Tenant: ${tenantName}`, 14, 52);
+    doc.text(`Date: ${dateFrom || "Start"} to ${dateTo || "Today"}`, 14, 58);
+    doc.text(`Bill Type: ${billTypeFilter || "All"}`, 14, 64);
+    doc.text(`Payment Mode: ${paymentModeFilter || "All"}`, 14, 70);
+
+    // ✅ Prepare rows
+    const txRows = sortedTx.map(tx => [
+      tx.payment_date || "-",
+      resolveTenantName(tx.tenant_id),
+      resolveGroupName(tx.group_id),
+      tx.bill_type || "-",
+      tx.payment_mode || "-",
+      formatMoney(tx.room_rent_amount),
+      formatMoney(tx.electricity_bill_amount),
+      formatMoney(tx.water_bill_amount),
+      formatMoney(transactionAmountDisplay(tx))
+    ]);
+
+    // ✅ Table
+    doc.autoTable({
+      startY: 76,
+
+      head: [[
+        "Date",
+        "Tenant",
+        "Group",
+        "Bill Type",
+        "Payment Mode",
+        "Room Rent",
+        "Electricity",
+        "Water",
+        "Total Paid"
+      ]],
+
+      body: txRows,
+
+      styles: {
+        fontSize: 8,
+        cellPadding: 3
+      },
+
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: 255
+      },
+
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' }
+      }
+    });
+
+    doc.save(`transactions_${getToday()}.pdf`);
+    setMessage("reportMsg", "Transactions PDF downloaded successfully", "success");
+
+  }catch(error){
+    console.error(error);
+    setMessage("reportMsg", "Unable to generate Transactions PDF.", "error");
+  }
+}  
 
 async function logout(){
   const proceed = confirm("Do you want to logout?");
