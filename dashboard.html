@@ -573,14 +573,6 @@ html {
     </div>
   </div>
 
-  <!-- UNPAID TENANT ALERT -->
-  <div class="card">
-    <h3>Unpaid Tenant Alert (Current Month Room Rent)</h3>
-    <div class="table-wrap">
-      <table id="unpaidTenantTable"></table>
-    </div>
-  </div>
-
   <!-- TENANT FILTERS + TABLE -->
   <div class="card" id="tenantsSection">
     <h3>Tenants</h3>
@@ -1136,6 +1128,8 @@ function renderGroupsTable(){
 
 function renderUnpaidTenantTable(){
   const table = document.getElementById("unpaidTenantTable");
+  if (!table) return;
+  
   const currentMonthStart = getCurrentMonthStart();
 
   const unpaidActiveTenants = tenantsData.filter(t => {
