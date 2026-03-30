@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
@@ -10,28 +9,6 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 
 <style>
-  body { margin: 0; font-family: Arial, sans-serif; }
-
-  header nav a, header nav button {
-    font-size: 14px;
-    }
-
-  @media (max-width: 600px) {
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    header nav {
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    section {
-      padding: 15px !important;
-    }
-  }
-  
 body{
   background:#0f172a;
   color:white;
@@ -301,31 +278,10 @@ td, th{
   background:rgba(245,158,11,0.18);
   color:#fde68a;
 }
-
-  html {
-    scroll-behavior: smooth;
-  }
-  
 </style>
 </head>
 <body>
 
-<header style="background:#0f172a;color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
-  <h2 style="margin:0;font-size:18px;">Tenant Ledger Dashboard</h2>
-  <nav style="display:flex;gap:15px;flex-wrap:wrap;">
-    <a href="#reportsSection" style="color:white;text-decoration:none;">Reports</a>
-    <a href="#groupsSection" style="color:white;text-decoration:none;">Groups</a>
-    <a href="#tenantsSection" style="color:white;text-decoration:none;">Tenants</a>
-    <a href="#transactionsSection" style="color:white;text-decoration:none;">Transactions</a>
-    <button onclick="logout()" id="logoutBtn">Logout</button>
-  </nav>
-</header>
-
-<section style="padding:20px;background:#f1f5f9;text-align:center;">
-  <h1 style="margin:0;">Manage Everything in One Place</h1>
-  <p style="margin-top:8px;color:#475569;">Track payments, monitor tenants, generate reports instantly.</p>
-</section>
-  
 <div class="header">
   <div class="header-left">
     <h2>Dashboard</h2>
@@ -350,13 +306,16 @@ td, th{
     <div id="propertyMsg" class="message"></div>
   </div>
 
-<!-- REPORTS -->
-<div class="card" id="reportsSection">
-  <h3>Reports</h3>
-  <div class="button-row">
-    <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">Download Monthly PDF Report</button>
+  <!-- REPORTS / REMINDERS -->
+  <div class="card">
+    <h3>Reports & Reminders</h3>
+    <div class="button-row">
+      <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">Download Monthly PDF Report</button>
+      <button id="emailReminderBtn" class="muted" onclick="sendReminderSummary()">Send Reminder Summary</button>
+    </div>
+    <div class="small-note">Reminder summary opens your default mail app addressed to the owner email. Fully automatic monthly email reminders need a scheduler outside dashboard.html.</div>
+    <div id="reportMsg" class="message"></div>
   </div>
-</div>
 
   <!-- KPI CARDS -->
   <div class="kpi-grid">
@@ -520,17 +479,24 @@ td, th{
     <div id="txnMsg" class="message"></div>
   </div>
 
-<!-- GROUP TABLE -->
-<div class="card">
-  <h3>Groups</h3>
-  <div class="table-wrap">
-    <table id="groupsTable"></table>
+  <!-- GROUP TABLE -->
+  <div class="card">
+    <h3>Groups</h3>
+    <div class="table-wrap">
+      <table id="groupsTable"></table>
+    </div>
   </div>
-</div>
-    
+
+  <!-- UNPAID TENANT ALERT -->
+  <div class="card">
+    <h3>Unpaid Tenant Alert (Current Month Room Rent)</h3>
+    <div class="table-wrap">
+      <table id="unpaidTenantTable"></table>
+    </div>
+  </div>
+
   <!-- TENANT FILTERS + TABLE -->
   <div class="card">
-    <div id="tenantsSection">
     <h3>Tenants</h3>
 
     <div class="filter-box-2">
@@ -560,11 +526,10 @@ td, th{
       <span id="tenantPageInfo">Page 1</span>
       <button class="muted" onclick="changeTenantPage(1)">Next</button>
     </div>
-    </div>
   </div>
 
   <!-- TRANSACTION FILTERS + TABLE -->
-  <div class="card" id="transactionsSection">
+  <div class="card">
     <h3>Transactions</h3>
 
     <div class="filter-box">
