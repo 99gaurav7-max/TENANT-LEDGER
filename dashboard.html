@@ -392,16 +392,16 @@ html {
     <div id="propertyMsg" class="message"></div>
   </div>
 
-  <!-- REPORTS / REMINDERS -->
-  <div class="card" id="reportSection">
-    <h3>Reports & Reminders</h3>
-    <div class="button-row">
-      <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">Download Monthly PDF Report</button>
-      <button id="emailReminderBtn" class="muted" onclick="sendReminderSummary()">Send Reminder Summary</button>
-    </div>
-    <div class="small-note">Reminder summary opens your default mail app addressed to the owner email. Fully automatic monthly email reminders need a scheduler outside dashboard.html.</div>
-    <div id="reportMsg" class="message"></div>
+<!-- REPORTS -->
+<div class="card" id="reportSection">
+  <h3>Reports</h3>
+  <div class="button-row">
+    <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">
+      Download Monthly PDF Report
+    </button>
   </div>
+  <div id="reportMsg" class="message"></div>
+</div>
 
   <!-- KPI CARDS -->
   <div class="kpi-grid" id="kpiSection">
@@ -1707,39 +1707,6 @@ async function addTransaction(){
   setMessage("txnMsg", "Transaction recorded successfully", "success");
   resetAddTransactionForm();
   await loadData();
-}
-
-function getReminderSummaryLines(){
-  const currentMonthStart = getCurrentMonthStart();
-
-  const unpaidActiveTenants = tenantsData.filter(t => {
-    if(!t.is_active) return false;
-    const roomRentPaid = transactionsData
-      .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
-      .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
-    return roomRentPaid <= 0;
-  });
-
-  return unpaidActiveTenants.map(t => `- ${t.tenant_name} | Group ${resolveGroupName(t.group_id)} | ${t.phone || "-"}`);
-}
-
-function sendReminderSummary(){
-  clearMessage("reportMsg");
-
-  if(!ownerRow?.email){
-    setMessage("reportMsg", "Owner email not found.", "error");
-    return;
-  }
-
-  const lines = getReminderSummaryLines();
-  const subject = encodeURIComponent(`Unpaid Tenant Summary - ${ownerRow.property_name || "Property"} - ${getToday()}`);
-  const body = encodeURIComponent(
-    `Owner Reminder Summary\n\nProperty: ${ownerRow.property_name || "-"}\nDate: ${getToday()}\n\nUnpaid Room Rent Tenants (Current Month):\n` +
-    (lines.length ? lines.join("\n") : "No unpaid active tenants for current month.")
-  );
-
-  window.location.href = `mailto:${ownerRow.email}?subject=${subject}&body=${body}`;
-  setMessage("reportMsg", "Reminder email draft opened successfully", "success");
 }
 
 function downloadMonthlyPdfReport(){
