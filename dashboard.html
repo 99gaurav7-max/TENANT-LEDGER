@@ -278,6 +278,78 @@ td, th{
   background:rgba(245,158,11,0.18);
   color:#fde68a;
 }
+/* NAV CONTAINER CENTER */
+.nav-container{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* HAMBURGER */
+.hamburger{
+  font-size:22px;
+  cursor:pointer;
+  padding:8px 12px;
+  border-radius:8px;
+  background:rgba(255,255,255,0.1);
+}
+
+/* DROPDOWN MENU - FINAL POLISHED */
+.nav-menu{
+  position:absolute;
+  top:50px;
+  left:50%;
+  transform:translateX(-50%) translateY(-10px) scale(0.95);
+  background:rgba(15,23,42,0.7); /* 70% transparent */
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:200px;
+  opacity:0;
+  pointer-events:none;
+  transition:all 0.3s ease;
+  box-shadow:0 12px 30px rgba(0,0,0,0.5);
+  z-index:999;
+}
+
+/* ACTIVE STATE */
+.nav-menu.active{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+
+.nav-menu div{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+  transition:all 0.2s ease;
+}
+
+.nav-menu div:hover{
+  background:rgba(255,255,255,0.12);
+  transform:scale(1.03);
+}
+
+/* ACTIVE SECTION */
+.active-nav{
+  background:rgba(255,255,255,0.2);
+  font-weight:700;
+}
+
+html {
+  scroll-behavior: smooth;
+}  
 </style>
 </head>
 <body>
@@ -287,6 +359,20 @@ td, th{
     <h2>Dashboard</h2>
     <div class="property-line" id="propertyDisplay">Property: -</div>
   </div>
+
+  <!-- NAV (CENTER) -->
+  <div class="nav-container">
+    <div class="hamburger" onclick="toggleNav()">☰</div>
+
+    <div id="navMenu" class="nav-menu">
+      <div data-target="reportSection" onclick="scrollToSection('reportSection')">📄 Report</div>
+      <div data-target="kpiSection" onclick="scrollToSection('kpiSection')">📊 KPIs</div>
+      <div data-target="groupsSection" onclick="scrollToSection('groupsSection')">👥 Groups</div>
+      <div data-target="tenantsSection" onclick="scrollToSection('tenantsSection')">🧍 Tenants</div>
+      <div data-target="transactionsSection" onclick="scrollToSection('transactionsSection')">💰 Transactions</div>
+    </div>
+  </div>
+
   <button id="logoutBtn" onclick="logout()">Logout</button>
 </div>
 
@@ -307,7 +393,7 @@ td, th{
   </div>
 
   <!-- REPORTS / REMINDERS -->
-  <div class="card">
+  <div class="card" id="reportSection">
     <h3>Reports & Reminders</h3>
     <div class="button-row">
       <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">Download Monthly PDF Report</button>
@@ -318,7 +404,7 @@ td, th{
   </div>
 
   <!-- KPI CARDS -->
-  <div class="kpi-grid">
+  <div class="kpi-grid" id="kpiSection">
     <div class="kpi-card">
       <div class="kpi-title">Total Groups</div>
       <div class="kpi-value" id="kpiGroups">0</div>
@@ -480,7 +566,7 @@ td, th{
   </div>
 
   <!-- GROUP TABLE -->
-  <div class="card">
+  <div class="card" id="groupsSection">
     <h3>Groups</h3>
     <div class="table-wrap">
       <table id="groupsTable"></table>
@@ -496,7 +582,7 @@ td, th{
   </div>
 
   <!-- TENANT FILTERS + TABLE -->
-  <div class="card">
+  <div class="card" id="tenantsSection">
     <h3>Tenants</h3>
 
     <div class="filter-box-2">
@@ -529,7 +615,7 @@ td, th{
   </div>
 
   <!-- TRANSACTION FILTERS + TABLE -->
-  <div class="card">
+  <div class="card" id="transactionsSection">
     <h3>Transactions</h3>
 
     <div class="filter-box">
@@ -589,6 +675,83 @@ td, th{
 </div>
 
 <script>
+document.addEventListener("click", function(e){
+  const nav = document.getElementById("navMenu");
+  const hamburger = document.querySelector(".hamburger");
+
+  if (!nav.contains(e.target) && !hamburger.contains(e.target)) {
+    nav.classList.remove("active");
+  }
+});
+  
+function toggleNav(){
+  const menu = document.getElementById("navMenu");
+  menu.classList.toggle("active");
+}
+
+/* SMOOTH SCROLL */
+function scrollToSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  const headerOffset = document.querySelector(".header")?.offsetHeight || 80;
+
+  const y = el.getBoundingClientRect().top + window.pageYOffset - headerOffset - 10;
+
+  window.scrollTo({
+    top: y,
+    behavior: "smooth"
+  });
+
+  document.getElementById("navMenu").classList.remove("active");
+}
+
+const sections = [
+  "reportSection",
+  "kpiSection",
+  "groupsSection",
+  "tenantsSection",
+  "transactionsSection"
+];
+
+window.addEventListener("scroll", () => {
+  let current = "";
+
+  sections.forEach(id => {
+    const section = document.getElementById(id);
+    if (!section) return;
+
+    const rect = section.getBoundingClientRect();
+
+    if (rect.top <= 150 && rect.bottom >= 150) {
+      current = id;
+    }
+  });
+
+  document.querySelectorAll(".nav-menu div").forEach(item => {
+    item.classList.remove("active-nav");
+  });
+
+  if (current) {
+    const activeItem = document.querySelector(
+      `.nav-menu div[data-target="${current}"]`
+    );
+    if (activeItem) activeItem.classList.add("active-nav");
+  }
+});
+
+  document.querySelectorAll(".nav-menu div").forEach(item => {
+    item.classList.remove("active-nav");
+  });
+
+  if (current) {
+    const activeItem = document.querySelector(
+      `.nav-menu div[data-target="${current}"]`
+    );
+    if (activeItem) activeItem.classList.add("active-nav");
+  }
+});
+  
 const supabaseClient = window.supabase.createClient(
   "https://xifmjdogllsabpnlvmzm.supabase.co",
   "sb_publishable_3hKqNzguct4AbduSjPuJNA_Bn5sqD1J"
