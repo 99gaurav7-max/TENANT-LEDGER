@@ -1723,8 +1723,12 @@ function downloadMonthlyPdfReport(){
     doc.text(`Generated on: ${getToday()}`, 14, 26);
     doc.text(`Month Range: ${monthRange.start} to ${monthRange.end}`, 14, 32);
 
+    /* =========================
+       GROUP TABLE (UNCHANGED)
+    ========================= */
     const groupRows = groupsData.map(g => {
       const summary = getGroupCurrentMonthSummary(g.id);
+
       const status = (
         summary.roomRentPaid >= Number(g.rent_amount || 0) &&
         summary.electricityPaid > 0 &&
@@ -1747,30 +1751,82 @@ function downloadMonthlyPdfReport(){
       body: groupRows
     });
 
+    /* =========================
+       SORT TENANTS (GROUP → NAME)
+    ========================= */
     const currentMonthStart = getCurrentMonthStart();
-    const tenantRows = tenantsData.map(t => {
-      const roomRentPaid = transactionsData
-        .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
-        .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+
+    const sortedTenants = [...tenantsData].sort((a, b) => {
+      const groupA = resolveGroupName(a.group_id) || "";
+      const groupB = resolveGroupName(b.group_id) || "";
+
+      if (groupA < groupB) return -1;
+      if (groupA > groupB) return 1;
+
+      return (a.tenant_name || "").localeCompare(b.tenant_name || "");
+    });
+
+    /* =========================
+       TENANT TABLE (FINAL)
+    ========================= */
+    const tenantRows = sortedTenants.map(t => {
+
+      const tenantTx = transactionsData.filter(tx =>
+        tx.tenant_id === t.id &&
+        tx.payment_date >= currentMonthStart &&
+        tx.payment_date <= getToday()
+      );
+
+      const roomRentPaid = tenantTx.reduce(
+        (sum, tx) => sum + Number(tx.room_rent_amount || 0), 0
+      );
+
+      const electricityPaid = tenantTx.reduce(
+        (sum, tx) => sum + Number(tx.electricity_amount || 0), 0
+      );
+
+      const waterPaid = tenantTx.reduce(
+        (sum, tx) => sum + Number(tx.water_amount || 0), 0
+      );
+
+      const status = (
+        roomRentPaid > 0 ||
+        electricityPaid > 0 ||
+        waterPaid > 0
+      ) ? "Paid" : "Unpaid";
 
       return [
         t.tenant_name,
         resolveGroupName(t.group_id),
         t.phone || "-",
         formatMoney(t.security_deposit),
+        formatMoney(t.rent_amount || 0),
         formatMoney(roomRentPaid),
-        roomRentPaid > 0 ? "Paid" : "Unpaid"
+        formatMoney(electricityPaid),
+        formatMoney(waterPaid),
+        status
       ];
     });
 
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 12,
-      head: [["Tenant", "Group", "Phone", "Security Deposit", "Room Rent Paid (Current Month)", "Status"]],
+      head: [[
+        "Tenant Name",
+        "Group",
+        "Phone",
+        "Security Deposit",
+        "Room Rent",
+        "Room Rent Paid",
+        "Electricity Paid",
+        "Water Paid",
+        "Status"
+      ]],
       body: tenantRows
     });
 
     doc.save(`monthly_report_${getToday()}.pdf`);
     setMessage("reportMsg", "Monthly PDF report downloaded successfully", "success");
+
   }catch(error){
     console.error(error);
     setMessage("reportMsg", "Unable to generate PDF report.", "error");
