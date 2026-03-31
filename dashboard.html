@@ -558,6 +558,28 @@ html {
         <label>Payment Date</label>
         <input id="paymentDate" type="date">
       </div>
+      <div class="input-group">
+  <label>Payment For (Month)</label>
+  <select id="paymentForMonth">
+    <option value="01">January</option>
+    <option value="02">February</option>
+    <option value="03">March</option>
+    <option value="04">April</option>
+    <option value="05">May</option>
+    <option value="06">June</option>
+    <option value="07">July</option>
+    <option value="08">August</option>
+    <option value="09">September</option>
+    <option value="10">October</option>
+    <option value="11">November</option>
+    <option value="12">December</option>
+  </select>
+</div>
+
+<div class="input-group">
+  <label>Payment For (Year)</label>
+  <select id="paymentForYear"></select>
+</div>
     </div>
     <div class="button-row">
       <button id="addTransactionBtn" onclick="addTransaction()">Add Transaction</button>
@@ -672,6 +694,19 @@ html {
 </div>
 
 <script>
+  function populatePaymentYearDropdown(){
+  const yearSelect = document.getElementById("paymentForYear");
+  const currentYear = new Date().getFullYear();
+
+  let options = "";
+  for(let i = currentYear - 2; i <= currentYear + 3; i++){
+    options += `<option value="${i}">${i}</option>`;
+  }
+
+  yearSelect.innerHTML = options;
+  yearSelect.value = currentYear;
+}
+
 /* =========================
    NAV CLICK OUTSIDE CLOSE
 ========================= */
@@ -904,6 +939,8 @@ async function checkUser(){
   document.getElementById("txDateTo").value = monthRange.end;
 
   setMaxDateToday();
+
+  populatePaymentYearDropdown();
 
   await loadOwner();
   await loadData();
