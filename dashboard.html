@@ -652,68 +652,75 @@ html {
     </div>
   </div>
 
-  <!-- TRANSACTION FILTERS + TABLE -->
-  <div class="card" id="transactionsSection">
-    <h3>Transactions</h3>
+<!-- TRANSACTION FILTERS + TABLE -->
+<div class="card" id="transactionsSection">
+  <h3>Transactions</h3>
 
-    <div class="filter-box">
-      <div class="input-group">
-        <label>Filter by Group</label>
-        <select id="txGroupFilter" onchange="applyTransactionFilters()"></select>
-      </div>
-      <div class="input-group">
-        <label>Filter by Tenant</label>
-        <select id="txTenantFilter" onchange="applyTransactionFilters()"></select>
-      </div>
-      <div class="input-group">
-        <label>From Date</label>
-        <input id="txDateFrom" type="date" onchange="applyTransactionFilters()">
-      </div>
-      <div class="input-group">
-        <label>To Date</label>
-        <input id="txDateTo" type="date" onchange="applyTransactionFilters()">
-      </div>
-      <div class="input-group">
-        <label>Bill Type</label>
-        <select id="txBillTypeFilter" onchange="applyTransactionFilters()">
-          <option value="">All Bill Types</option>
-          <option value="Room Rent">Room Rent</option>
-          <option value="Electricity Bill">Electricity Bill</option>
-          <option value="Water Bill">Water Bill</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label>Payment Mode</label>
-        <select id="txPaymentModeFilter" onchange="applyTransactionFilters()">
-          <option value="">All Payment Modes</option>
-          <option value="UPI">UPI</option>
-          <option value="Cash">Cash</option>
-          <option value="Bank Transfer">Bank Transfer</option>
-          <option value="Card">Card</option>
-          <option value="Cheque">Cheque</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
+  <div class="filter-box">
+    <div class="input-group">
+      <label>Filter by Group</label>
+      <select id="txGroupFilter" onchange="applyTransactionFilters()"></select>
     </div>
+    <div class="input-group">
+      <label>Filter by Tenant</label>
+      <select id="txTenantFilter" onchange="applyTransactionFilters()"></select>
+    </div>
+    <div class="input-group">
+      <label>From Date</label>
+      <input id="txDateFrom" type="date" onchange="applyTransactionFilters()">
+    </div>
+    <div class="input-group">
+      <label>To Date</label>
+      <input id="txDateTo" type="date" onchange="applyTransactionFilters()">
+    </div>
+
+    <!-- ✅ NEW FILTER (ADDED) -->
+    <div class="input-group">
+      <label>Payment Month</label>
+      <input id="txPaymentMonth" type="month" onchange="applyTransactionFilters()">
+    </div>
+
+    <div class="input-group">
+      <label>Bill Type</label>
+      <select id="txBillTypeFilter" onchange="applyTransactionFilters()">
+        <option value="">All Bill Types</option>
+        <option value="Room Rent">Room Rent</option>
+        <option value="Electricity Bill">Electricity Bill</option>
+        <option value="Water Bill">Water Bill</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Payment Mode</label>
+      <select id="txPaymentModeFilter" onchange="applyTransactionFilters()">
+        <option value="">All Payment Modes</option>
+        <option value="UPI">UPI</option>
+        <option value="Cash">Cash</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Card">Card</option>
+        <option value="Cheque">Cheque</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+  </div>
 
   <div class="button-row">
     <button class="muted" onclick="clearTransactionFilters()">Reset Filters</button>
 
-  <!-- ✅ NEW BUTTON -->
+    <!-- ✅ NEW BUTTON -->
     <button class="secondary" onclick="downloadTransactionPdf()" id="downloadTxnPdfBtn">
       Download Transactions PDF
     </button>
   </div>
 
-    <div class="table-wrap">
-      <table id="transactionsTable"></table>
-    </div>
-    <div class="pagination">
-      <button class="muted" onclick="changeTransactionPage(-1)">Previous</button>
-      <span id="transactionPageInfo">Page 1</span>
-      <button class="muted" onclick="changeTransactionPage(1)">Next</button>
-    </div>
+  <div class="table-wrap">
+    <table id="transactionsTable"></table>
   </div>
+  <div class="pagination">
+    <button class="muted" onclick="changeTransactionPage(-1)">Previous</button>
+    <span id="transactionPageInfo">Page 1</span>
+    <button class="muted" onclick="changeTransactionPage(1)">Next</button>
+  </div>
+</div>
 
 </div>
 
@@ -948,9 +955,17 @@ function resetAddTransactionForm(){
   document.getElementById("paymentDate").value = getToday();
   document.getElementById("billType").value = "Room Rent";
   document.getElementById("paymentMode").value = "UPI";
+
   if(document.getElementById("tenantSelect").options.length > 0){
     document.getElementById("tenantSelect").selectedIndex = 0;
   }
+
+  // ✅ Reset payment month/year to current (data safety)
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+  const currentYear = new Date().getFullYear();
+
+  document.getElementById("paymentForMonth").value = currentMonth;
+  document.getElementById("paymentForYear").value = currentYear;
 }
 
 function resetUpdateRentForm(){
@@ -1370,6 +1385,9 @@ function applyTransactionFilters(){
   const billTypeFilter = document.getElementById("txBillTypeFilter").value;
   const paymentModeFilter = document.getElementById("txPaymentModeFilter").value;
 
+  // ✅ NEW
+  const paymentMonth = document.getElementById("txPaymentMonth")?.value || "";
+
   filteredTransactions = [...transactionsData];
 
   if(groupFilter){
@@ -1384,6 +1402,14 @@ function applyTransactionFilters(){
   if(dateTo){
     filteredTransactions = filteredTransactions.filter(tx => tx.payment_date <= dateTo);
   }
+
+  // ✅ NEW FILTER (core addition)
+  if(paymentMonth){
+    filteredTransactions = filteredTransactions.filter(tx => 
+      tx.payment_for_month === paymentMonth
+    );
+  }
+
   if(billTypeFilter){
     filteredTransactions = filteredTransactions.filter(tx => tx.bill_type === billTypeFilter);
   }
