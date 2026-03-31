@@ -1941,18 +1941,6 @@ function downloadMonthlyPdfReport(){
         tx.payment_for_month === selectedMonth
       );
 
-      const roomRentPaid = tenantTx.reduce(
-        (sum, tx) => sum + Number(tx.room_rent_amount || 0), 0
-      );
-
-      const electricityPaid = tenantTx.reduce(
-        (sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0
-      );
-      
-      const waterPaid = tenantTx.reduce(
-        (sum, tx) => sum + Number(tx.water_bill_amount || 0), 0
-      );
-
       // 🔹 Calculate totals
       const roomRentPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
       const electricityPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
