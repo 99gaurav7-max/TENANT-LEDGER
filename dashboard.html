@@ -395,6 +395,30 @@ html {
 <!-- REPORTS -->
 <div class="card" id="reportSection">
   <h3>Reports</h3>
+  <div class="grid-3">
+  <div class="input-group">
+    <label>Report Month</label>
+    <select id="reportMonth">
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </div>
+
+  <div class="input-group">
+    <label>Report Year</label>
+    <select id="reportYear"></select>
+  </div>
+</div>
   <div class="button-row">
     <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">
       Download Monthly PDF Report
@@ -699,13 +723,26 @@ html {
   const currentYear = new Date().getFullYear();
 
   let options = "";
-  for(let i = currentYear - 2; i <= currentYear + 3; i++){
+  for(let i = currentYear - 5; i <= currentYear + 2; i++){
     options += `<option value="${i}">${i}</option>`;
   }
 
   yearSelect.innerHTML = options;
   yearSelect.value = currentYear;
 }
+
+  function populateReportYearDropdown(){
+  const yearSelect = document.getElementById("reportYear");
+  const currentYear = new Date().getFullYear();
+
+  let options = "";
+  for(let i = currentYear - 5; i <= currentYear + 2; i++){
+    options += `<option value="${i}">${i}</option>`;
+  }
+
+  yearSelect.innerHTML = options;
+  yearSelect.value = currentYear;
+  }
 
 /* =========================
    NAV CLICK OUTSIDE CLOSE
@@ -942,6 +979,15 @@ async function checkUser(){
 
   populatePaymentYearDropdown();
 
+  // ✅ Set default month = current month
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+  document.getElementById("paymentForMonth").value = currentMonth;
+
+  populateReportYearDropdown();
+
+  // default report month = current month
+  document.getElementById("reportMonth").value = currentMonth;
+
   await loadOwner();
   await loadData();
 
@@ -1033,10 +1079,13 @@ function renderKPIs(){
   const inactiveTenants = tenantsData.filter(t => !t.is_active);
 
   const expectedMonthlyRoomRent = groupsData.reduce((sum, g) => sum + Number(g.rent_amount || 0), 0);
-  const currentMonthStart = getCurrentMonthStart();
+  
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-  const currentMonthTransactions = transactionsData.filter(tx => tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
+  const currentMonthTransactions = transactionsData.filter(tx =>tx.payment_for_month === currentMonth);
+  
   const collectedRoomRent = currentMonthTransactions.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+  
   const pendingRoomRent = expectedMonthlyRoomRent - collectedRoomRent;
 
   document.getElementById("kpiGroups").innerText = groupsData.length;
@@ -1113,9 +1162,12 @@ function transactionAmountDisplay(tx){
 }
 
 function getGroupCurrentMonthSummary(groupId){
-  const currentMonthStart = getCurrentMonthStart();
-  const rows = transactionsData.filter(tx => tx.group_id === groupId && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
+  const rows = transactionsData.filter(tx => 
+    tx.group_id === groupId && 
+    tx.payment_for_month === currentMonth
+  );
   const roomRentPaid = rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
   const electricityPaid = rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
   const waterPaid = rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
@@ -1172,7 +1224,7 @@ function renderUnpaidTenantTable(){
   const unpaidActiveTenants = tenantsData.filter(t => {
     if(!t.is_active) return false;
     const roomRentPaid = transactionsData
-      .filter(tx => tx.tenant_id === t.id && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday())
+      .filter(tx => tx.tenant_id === t.id && tx.payment_for_month === selectedMonth && tx.payment_date <= getToday())
       .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
     return roomRentPaid <= 0;
   });
@@ -1201,7 +1253,7 @@ function renderUnpaidTenantTable(){
 
 function tenantCurrentMonthBreakdown(tenantId){
   const currentMonthStart = getCurrentMonthStart();
-  const rows = transactionsData.filter(tx => tx.tenant_id === tenantId && tx.payment_date >= currentMonthStart && tx.payment_date <= getToday());
+  const rows = transactionsData.filter(tx => tx.tenant_id === tenantId && tx.payment_for_month === selectedMonth && tx.payment_date <= getToday());
 
   return {
     roomRent: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
@@ -1675,6 +1727,18 @@ async function addTransaction(){
   const paymentDate = document.getElementById("paymentDate").value || getToday();
   const amount = Number(amountValue);
 
+  const paymentForMonth = document.getElementById("paymentForMonth").value;
+  const paymentForYear = document.getElementById("paymentForYear").value;
+
+  // Validation
+  if(!paymentForMonth || !paymentForYear){
+    setMessage("txnMsg", "Select payment month and year.", "error");
+  return;
+  }
+
+  // Format: YYYY-MM
+  const paymentFor = `${paymentForYear}-${paymentForMonth}`;
+
   if(!tenantId){
     setMessage("txnMsg", "Select an active tenant.", "error");
     return;
@@ -1712,6 +1776,7 @@ async function addTransaction(){
     bill_type: billType,
     payment_mode: paymentMode,
     payment_date: paymentDate,
+    payment_for_month: paymentFor,
     created_by: currentUser.id,
     room_rent_amount: 0,
     electricity_bill_amount: 0,
@@ -1751,13 +1816,16 @@ function downloadMonthlyPdfReport(){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const monthRange = getCurrentMonthRange();
+    
+    const reportMonth = document.getElementById("reportMonth").value;
+    const reportYear = document.getElementById("reportYear").value;
+    const selectedMonth = `${reportYear}-${reportMonth}`;
 
     doc.setFontSize(16);
     doc.text(`Monthly Report - ${ownerRow?.property_name || "Property"}`, 14, 18);
     doc.setFontSize(10);
     doc.text(`Generated on: ${getToday()}`, 14, 26);
-    doc.text(`Month Range: ${monthRange.start} to ${monthRange.end}`, 14, 32);
+    doc.text(`Report Month: ${selectedMonth}`, 14, 32);
 
     /* =========================
        GROUP TABLE (UNCHANGED)
@@ -1809,7 +1877,7 @@ function downloadMonthlyPdfReport(){
 
       const tenantTx = transactionsData.filter(tx =>
         tx.tenant_id === t.id &&
-        tx.payment_date >= currentMonthStart &&
+        tx.payment_for_month === selectedMonth &&
         tx.payment_date <= getToday()
       );
 
