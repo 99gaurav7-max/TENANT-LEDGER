@@ -1887,12 +1887,19 @@ function downloadMonthlyPdfReport(){
         waterPaid: rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0)
       };
 
-      
+      // 🔹 Calculate total expected rent for this group
+      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
+
+      const totalExpectedRent = groupTenants.reduce((sum, t) => 
+        sum + Number(t.rent_amount || 0), 0
+      );
+
+      // 🔹 Correct status logic
       const status = (
-        summary.roomRentPaid >= Number(g.rent_amount || 0) &&
+        summary.roomRentPaid >= totalExpectedRent &&
         summary.electricityPaid > 0 &&
         summary.waterPaid > 0
-      ) ? "Paid" : "Pending";
+      ) ? "Paid" : "Unpaid";
 
       return [
         g.group_name,
