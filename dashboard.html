@@ -969,23 +969,29 @@ async function checkUser(){
   }
 
   currentUser = data.session.user;
+
+  // ✅ Default payment date
   document.getElementById("paymentDate").value = getToday();
 
-  const monthRange = getCurrentMonthRange();
-  document.getElementById("txDateFrom").value = monthRange.start;
-  document.getElementById("txDateTo").value = monthRange.end;
+  // ✅ Show ALL transactions by default
+  document.getElementById("txDateFrom").value = "";
+  document.getElementById("txDateTo").value = "";
+
+  // ✅ Reset tenant filters (IMPORTANT FIX)
+  document.getElementById("tenantGroupFilter").value = "";
+  document.getElementById("tenantStatusFilter").value = "";
 
   setMaxDateToday();
 
   populatePaymentYearDropdown();
 
-  // ✅ Set default month = current month
+  // ✅ Default month = current month
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
   document.getElementById("paymentForMonth").value = currentMonth;
 
   populateReportYearDropdown();
 
-  // default report month = current month
+  // ✅ Default report month
   document.getElementById("reportMonth").value = currentMonth;
 
   await loadOwner();
@@ -1216,16 +1222,18 @@ function renderGroupsTable(){
 }
 
 function renderUnpaidTenantTable(){
+  const currentMonth = new Date().toISOString().slice(0, 7);
   const table = document.getElementById("unpaidTenantTable");
   if (!table) return;
-  
-  const currentMonthStart = getCurrentMonthStart();
 
   const unpaidActiveTenants = tenantsData.filter(t => {
     if(!t.is_active) return false;
     const roomRentPaid = transactionsData
-      .filter(tx => tx.tenant_id === t.id && tx.payment_for_month === selectedMonth && tx.payment_date <= getToday())
-      .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+  .filter(tx => 
+    tx.tenant_id === t.id && 
+    tx.payment_for_month === currentMonth
+  )
+  .reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
     return roomRentPaid <= 0;
   });
 
@@ -1252,8 +1260,12 @@ function renderUnpaidTenantTable(){
 }
 
 function tenantCurrentMonthBreakdown(tenantId){
-  const currentMonthStart = getCurrentMonthStart();
-  const rows = transactionsData.filter(tx => tx.tenant_id === tenantId && tx.payment_for_month === selectedMonth && tx.payment_date <= getToday());
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const rows = transactionsData.filter(tx => 
+    tx.tenant_id === tenantId && 
+    tx.payment_for_month === currentMonth
+  );
 
   return {
     roomRent: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
@@ -1270,17 +1282,24 @@ function tenantLatestPaymentDate(tenantId){
 }
 
 function applyTenantFilters(){
-  const groupFilter = document.getElementById("tenantGroupFilter").value;
-  const statusFilter = document.getElementById("tenantStatusFilter").value;
+  const groupFilter = document.getElementById("tenantGroupFilter")?.value || "";
+  const statusFilter = document.getElementById("tenantStatusFilter")?.value || "";
 
+  // Always start from full dataset
   filteredTenants = [...tenantsData];
 
-  if(groupFilter){
-    filteredTenants = filteredTenants.filter(t => t.group_id === groupFilter);
+  // Apply group filter (safe check)
+  if(groupFilter !== ""){
+    filteredTenants = filteredTenants.filter(t => String(t.group_id) === String(groupFilter));
   }
 
-  if(statusFilter){
-    filteredTenants = filteredTenants.filter(t => statusFilter === "Active" ? t.is_active : !t.is_active);
+  // Apply status filter (safe logic)
+  if(statusFilter !== ""){
+    if(statusFilter === "Active"){
+      filteredTenants = filteredTenants.filter(t => t.is_active === true);
+    }else if(statusFilter === "Inactive"){
+      filteredTenants = filteredTenants.filter(t => t.is_active === false);
+    }
   }
 
   tenantCurrentPage = 1;
@@ -1815,11 +1834,11 @@ function downloadMonthlyPdfReport(){
 
   try{
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
     const reportMonth = document.getElementById("reportMonth").value;
     const reportYear = document.getElementById("reportYear").value;
+
     const selectedMonth = `${reportYear}-${reportMonth}`;
+    const doc = new jsPDF();
 
     doc.setFontSize(16);
     doc.text(`Monthly Report - ${ownerRow?.property_name || "Property"}`, 14, 18);
@@ -1831,8 +1850,18 @@ function downloadMonthlyPdfReport(){
        GROUP TABLE (UNCHANGED)
     ========================= */
     const groupRows = groupsData.map(g => {
-      const summary = getGroupCurrentMonthSummary(g.id);
+      const rows = transactionsData.filter(tx => 
+        tx.group_id === g.id && 
+        tx.payment_for_month === selectedMonth
+      );
 
+      const summary = {
+        roomRentPaid: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
+        electricityPaid: rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0),
+        waterPaid: rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0)
+      };
+
+      
       const status = (
         summary.roomRentPaid >= Number(g.rent_amount || 0) &&
         summary.electricityPaid > 0 &&
@@ -1874,11 +1903,9 @@ function downloadMonthlyPdfReport(){
        TENANT TABLE (FINAL)
     ========================= */
     const tenantRows = sortedTenants.map(t => {
-
       const tenantTx = transactionsData.filter(tx =>
         tx.tenant_id === t.id &&
-        tx.payment_for_month === selectedMonth &&
-        tx.payment_date <= getToday()
+        tx.payment_for_month === selectedMonth
       );
 
       const roomRentPaid = tenantTx.reduce(
