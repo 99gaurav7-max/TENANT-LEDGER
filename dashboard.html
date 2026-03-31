@@ -1953,9 +1953,18 @@ function downloadMonthlyPdfReport(){
         (sum, tx) => sum + Number(tx.water_bill_amount || 0), 0
       );
 
+      // 🔹 Calculate totals
+      const roomRentPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
+      const electricityPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
+      const waterPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
+
+      // 🔹 Expected rent
+      const expectedRent = Number(t.rent_amount || 0);
+
+      // 🔹 Correct status logic (same as group logic)
       const status = (
-        roomRentPaid > 0 ||
-        electricityPaid > 0 ||
+        roomRentPaid >= expectedRent &&
+        electricityPaid > 0 &&
         waterPaid > 0
       ) ? "Paid" : "Unpaid";
 
