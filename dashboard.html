@@ -1383,7 +1383,9 @@ function getGroupSummaryByMonth(groupId, month){
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
-  const dataToRender = groupsData; // ALWAYS show all groups
+  const dataToRender = (filteredGroups && filteredGroups.length !== groupsData.length)
+  ? filteredGroups
+  : groupsData;
 
   if(!dataToRender.length){
     table.innerHTML = `<tr><td>No groups found.</td></tr>`;
