@@ -396,9 +396,6 @@ html {
 <div class="card" id="reportSection">
   <h3>Reports</h3>
   <div class="grid-3">
-    <div class="button-row">
-      <button class="muted" onclick="resetKpiFilters()">Reset KPI Filters</button>
-    </div>
   <div class="input-group">
     <label>Report Month</label>
     <select id="reportMonth">
@@ -421,6 +418,10 @@ html {
     <label>Report Year</label>
     <select id="reportYear"></select>
   </div>
+
+    <div class="button-row">
+      <button class="muted" onclick="resetKpiFilters()">Reset KPI Filters</button>
+    </div>
 </div>
   <div class="button-row">
     <button id="pdfReportBtn" class="secondary" onclick="downloadMonthlyPdfReport()">
