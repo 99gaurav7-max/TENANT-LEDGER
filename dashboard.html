@@ -1011,6 +1011,7 @@ let tenantsData = [];
 let transactionsData = [];
 let filteredTransactions = [];
 let filteredTenants = [];
+let filteredGroups = [];
 let isRealtimeStarted = false;
 
 const TENANTS_PER_PAGE = 10;
@@ -1255,11 +1256,14 @@ async function loadData(){
   tenantsData = tenants || [];
   transactionsData = transactions || [];
 
+  // ✅ FIX: initialize ALL filters properly
+  filteredGroups = [...groupsData];
+  filteredTenants = [...tenantsData];
+  filteredTransactions = [...transactionsData];
+
   renderKPIs();
   populateDropdowns();
   renderGroupsTable();
-  filteredTenants = [...tenantsData];
-  filteredTransactions = [...transactionsData];
   renderTenantsTable();
   renderTransactionsTable();
 }
@@ -1385,9 +1389,7 @@ function getGroupSummaryByMonth(groupId, month){
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
-  const dataToRender = (filteredGroups && filteredGroups.length !== groupsData.length)
-  ? filteredGroups
-  : groupsData;
+  const dataToRender = filteredGroups && filteredGroups.length ? filteredGroups : groupsData;
 
   if(!dataToRender.length){
     table.innerHTML = `<tr><td>No groups found.</td></tr>`;
