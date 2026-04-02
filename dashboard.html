@@ -799,7 +799,7 @@ html {
   function tenantSummaryByMonth(tenantId, month){
     const rows = transactionsData.filter(tx =>
       tx.tenant_id === tenantId &&
-      tx.payment_for_month === month
+      String(tx.payment_for_month).padStart(7, "0") === String(month)
     );
 
     return {
@@ -1380,7 +1380,10 @@ function getGroupSummaryByMonth(groupId, month){
 
   groupTenants.forEach(t => {
     transactionsData.forEach(tx => {
-      if(tx.tenant_id === t.id && tx.payment_for_month === month){
+
+      const txMonth = String(tx.payment_for_month).padStart(7, "0");
+
+      if(tx.tenant_id === t.id && txMonth === String(month)){
         summary.roomRentPaid += Number(tx.room_rent_amount || 0);
         summary.electricityPaid += Number(tx.electricity_bill_amount || 0);
         summary.waterPaid += Number(tx.water_bill_amount || 0);
