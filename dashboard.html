@@ -821,50 +821,34 @@ html {
   }
   
  function applyGroupFilters(){
-  const paymentMonth = document.getElementById("groupPaymentMonth")?.value || "";
   const statusFilter = document.getElementById("groupStatusFilter")?.value || "";
 
+  // ✅ Always start with all groups
   filteredGroups = [...groupsData];
 
-  // ✅ FIXED: Month filter (correct logic using tenants)
-  if(paymentMonth){
+  // ✅ Get selected OR current month
+  const month = getSelectedMonth("groupPaymentMonth");
+
+  // ✅ Apply ONLY status filter (correct logic)
+  if(statusFilter !== ""){
     filteredGroups = filteredGroups.filter(g => {
 
-      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
-
-      return groupTenants.some(t =>
-        transactionsData.some(tx =>
-          tx.tenant_id === t.id &&
-          tx.payment_for_month === paymentMonth
-        )
-      );
-    });
-  }
-
-  // ✅ FIXED: Status filter
-  if(statusFilter){
-    filteredGroups = filteredGroups.filter(g => {
-
-      const month = getSelectedMonth("groupPaymentMonth");
       const summary = getGroupSummaryByMonth(g.id, month);
 
-      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
-      const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
+      const expectedRent = Number(g.rent_amount || 0);
 
-      const status = (
-        summary.roomRentPaid >= totalExpectedRent &&
+      const isPaid =
+        summary.roomRentPaid >= expectedRent &&
         summary.electricityPaid > 0 &&
-        summary.waterPaid > 0
-      ) ? "Paid" : "Unpaid";
+        summary.waterPaid > 0;
 
-      return status === statusFilter;
+      return statusFilter === "Paid" ? isPaid : !isPaid;
     });
   }
 
   groupCurrentPage = 1;
   renderGroupsTable();
 }
-
   function resetGroupFilters(){
   document.getElementById("groupPaymentMonth").value = "";
   document.getElementById("groupStatusFilter").value = "";
