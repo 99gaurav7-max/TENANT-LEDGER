@@ -1667,14 +1667,22 @@ function clearTenantFilters(){
 }
 
 function clearTransactionFilters(){
-  const monthRange = getCurrentMonthRange();
   document.getElementById("txGroupFilter").value = "";
   document.getElementById("txTenantFilter").value = "";
-  document.getElementById("txDateFrom").value = monthRange.start;
-  document.getElementById("txDateTo").value = monthRange.end;
+  document.getElementById("txDateFrom").value = "";
+  document.getElementById("txDateTo").value = "";
   document.getElementById("txBillTypeFilter").value = "";
   document.getElementById("txPaymentModeFilter").value = "";
-  applyTransactionFilters();
+
+  // ✅ FIX (this is what was missing)
+  const monthInput = document.getElementById("txPaymentMonth");
+  if(monthInput){
+    monthInput.value = "";
+  }
+
+  filteredTransactions = [...transactionsData];
+  transactionCurrentPage = 1;
+  renderTransactionsTable();
 }
 
 async function savePropertyName(){
