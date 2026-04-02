@@ -657,6 +657,27 @@ html {
   <!-- GROUP TABLE -->
   <div class="card" id="groupsSection">
     <h3>Groups</h3>
+    <div class="filter-box-2">
+
+    <div class="input-group">
+      <label>Payment Month</label>
+      <input id="groupPaymentMonth" type="month" onchange="applyGroupFilters()">
+    </div>
+
+    <div class="input-group">
+      <label>Status</label>
+      <select id="groupStatusFilter" onchange="applyGroupFilters()">
+        <option value="">All</option>
+        <option value="Paid">Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+    </div>
+
+    <div class="button-row">
+      <button class="muted" onclick="resetGroupFilters()">Reset Filters</button>
+    </div>
+
+    </div>
     <div class="table-wrap">
       <table id="groupsTable"></table>
     </div>
@@ -775,6 +796,53 @@ html {
 </div>
 
 <script>
+  function applyGroupFilters(){
+  const paymentMonth = document.getElementById("groupPaymentMonth")?.value || "";
+  const statusFilter = document.getElementById("groupStatusFilter")?.value || "";
+
+  filteredGroups = [...groupsData];
+
+  // ✅ Month filter
+  if(paymentMonth){
+    filteredGroups = filteredGroups.filter(g => {
+      return transactionsData.some(tx =>
+        tx.group_id === g.id &&
+        tx.payment_for_month === paymentMonth
+      );
+    });
+  }
+
+  // ✅ Status filter
+  if(statusFilter){
+    filteredGroups = filteredGroups.filter(g => {
+      const summary = getGroupSummary(g.id);
+
+      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
+      const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
+
+      const status = (
+        summary.roomRentPaid >= totalExpectedRent &&
+        summary.electricityPaid > 0 &&
+        summary.waterPaid > 0
+      ) ? "Paid" : "Unpaid";
+
+      return status === statusFilter;
+    });
+  }
+
+  groupCurrentPage = 1;
+  renderGroupsTable();
+}
+
+  function resetGroupFilters(){
+  document.getElementById("groupPaymentMonth").value = "";
+  document.getElementById("groupStatusFilter").value = "";
+
+  filteredGroups = [...groupsData];
+  groupCurrentPage = 1;
+  renderGroupsTable();
+}
+  
   function resetReportFilters(){
     const now = new Date();
 
