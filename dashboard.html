@@ -427,33 +427,62 @@ html {
   <div id="reportMsg" class="message"></div>
 </div>
 
-  <!-- KPI CARDS -->
-  <div class="kpi-grid" id="kpiSection">
-    <div class="kpi-card">
-      <div class="kpi-title">Total Groups</div>
-      <div class="kpi-value" id="kpiGroups">0</div>
+  <!-- KPI FILTER -->
+<div class="card">
+  <h3>KPI Filter</h3>
+  <div class="grid-3">
+    <div class="input-group">
+      <label>KPI Month</label>
+      <select id="kpiMonth" onchange="renderKPIs()">
+        <option value="01">January</option>
+        <option value="02">February</option>
+        <option value="03">March</option>
+        <option value="04">April</option>
+        <option value="05">May</option>
+        <option value="06">June</option>
+        <option value="07">July</option>
+        <option value="08">August</option>
+        <option value="09">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Active Tenants</div>
-      <div class="kpi-value" id="kpiActiveTenants">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Inactive Tenants</div>
-      <div class="kpi-value" id="kpiInactiveTenants">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Expected Monthly Room Rent</div>
-      <div class="kpi-value" id="kpiExpectedRoomRent">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Collected Room Rent</div>
-      <div class="kpi-value" id="kpiCollectedRoomRent">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Pending Room Rent</div>
-      <div class="kpi-value" id="kpiPendingRoomRent">0</div>
+
+    <div class="input-group">
+      <label>KPI Year</label>
+      <select id="kpiYear" onchange="renderKPIs()"></select>
     </div>
   </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid" id="kpiSection">
+  <div class="kpi-card">
+    <div class="kpi-title">Total Groups</div>
+    <div class="kpi-value" id="kpiGroups">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Active Tenants</div>
+    <div class="kpi-value" id="kpiActiveTenants">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Inactive Tenants</div>
+    <div class="kpi-value" id="kpiInactiveTenants">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Expected Monthly Room Rent</div>
+    <div class="kpi-value" id="kpiExpectedRoomRent">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Collected Room Rent</div>
+    <div class="kpi-value" id="kpiCollectedRoomRent">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Pending Room Rent</div>
+    <div class="kpi-value" id="kpiPendingRoomRent">0</div>
+  </div>
+</div>
 
   <div class="grid-2">
     <!-- CREATE GROUP -->
@@ -992,7 +1021,7 @@ async function checkUser(){
   document.getElementById("txDateFrom").value = "";
   document.getElementById("txDateTo").value = "";
 
-  // ✅ Reset tenant filters (IMPORTANT FIX)
+  // ✅ Reset tenant filters
   document.getElementById("tenantGroupFilter").value = "";
   document.getElementById("tenantStatusFilter").value = "";
 
@@ -1008,6 +1037,12 @@ async function checkUser(){
 
   // ✅ Default report month
   document.getElementById("reportMonth").value = currentMonth;
+
+  // ✅ NEW: KPI default month/year
+  document.getElementById("kpiMonth").value = currentMonth;
+
+  const currentYear = new Date().getFullYear();
+  document.getElementById("kpiYear").value = currentYear;
 
   await loadOwner();
   await loadData();
@@ -1101,9 +1136,13 @@ function renderKPIs(){
 
   const expectedMonthlyRoomRent = groupsData.reduce((sum, g) => sum + Number(g.rent_amount || 0), 0);
   
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  // ✅ Get selected KPI month/year
+  const kpiMonth = document.getElementById("kpiMonth").value;
+  const kpiYear = document.getElementById("kpiYear").value;
 
-  const currentMonthTransactions = transactionsData.filter(tx =>tx.payment_for_month === currentMonth);
+  const selectedMonth = `${kpiYear}-${kpiMonth}`;
+
+  const currentMonthTransactions = transactionsData.filter(tx =>tx.payment_for_month === selectedMonth);
   
   const collectedRoomRent = currentMonthTransactions.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
   
