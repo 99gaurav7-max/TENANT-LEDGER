@@ -366,7 +366,7 @@ html {
 
     <div id="navMenu" class="nav-menu">
       <div data-target="reportSection" onclick="scrollToSection('reportSection')">📄 Report</div>
-      <div data-target="kpiFullSection" onclick="scrollToSection('kpiSection')">📊 KPIs</div>
+      <div data-target="kpiFullSection" onclick="scrollToSection('kpiFullSection')">📊 KPIs</div>
       <div data-target="groupsSection" onclick="scrollToSection('groupsSection')">👥 Groups</div>
       <div data-target="tenantsSection" onclick="scrollToSection('tenantsSection')">🧍 Tenants</div>
       <div data-target="transactionsSection" onclick="scrollToSection('transactionsSection')">💰 Transactions</div>
@@ -460,6 +460,11 @@ html {
         <select id="kpiYear" onchange="renderKPIs()"></select>
       </div>
     </div>
+    
+    <div class="button-row">
+      <button class="muted" onclick="resetKpiFilters()">Reset KPI Filter</button>
+    </div>
+    
   </div>
 
   <!-- KPI CARDS -->
