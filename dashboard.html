@@ -366,7 +366,7 @@ html {
 
     <div id="navMenu" class="nav-menu">
       <div data-target="reportSection" onclick="scrollToSection('reportSection')">📄 Report</div>
-      <div data-target="kpiSection" onclick="scrollToSection('kpiSection')">📊 KPIs</div>
+      <div data-target="kpiFullSection" onclick="scrollToSection('kpiSection')">📊 KPIs</div>
       <div data-target="groupsSection" onclick="scrollToSection('groupsSection')">👥 Groups</div>
       <div data-target="tenantsSection" onclick="scrollToSection('tenantsSection')">🧍 Tenants</div>
       <div data-target="transactionsSection" onclick="scrollToSection('transactionsSection')">💰 Transactions</div>
@@ -396,6 +396,9 @@ html {
 <div class="card" id="reportSection">
   <h3>Reports</h3>
   <div class="grid-3">
+    <div class="button-row">
+      <button class="muted" onclick="resetKpiFilters()">Reset KPI Filters</button>
+    </div>
   <div class="input-group">
     <label>Report Month</label>
     <select id="reportMonth">
@@ -427,61 +430,66 @@ html {
   <div id="reportMsg" class="message"></div>
 </div>
 
+ <!-- KPI FULL SECTION (FIXED WRAPPER) -->
+<div id="kpiFullSection">
+
   <!-- KPI FILTER -->
-<div class="card">
-  <h3>KPI Filter</h3>
-  <div class="grid-3">
-    <div class="input-group">
-      <label>KPI Month</label>
-      <select id="kpiMonth" onchange="renderKPIs()">
-        <option value="01">January</option>
-        <option value="02">February</option>
-        <option value="03">March</option>
-        <option value="04">April</option>
-        <option value="05">May</option>
-        <option value="06">June</option>
-        <option value="07">July</option>
-        <option value="08">August</option>
-        <option value="09">September</option>
-        <option value="10">October</option>
-        <option value="11">November</option>
-        <option value="12">December</option>
-      </select>
-    </div>
+  <div class="card">
+    <h3>KPI Filter</h3>
+    <div class="grid-3">
+      <div class="input-group">
+        <label>KPI Month</label>
+        <select id="kpiMonth" onchange="renderKPIs()">
+          <option value="01">January</option>
+          <option value="02">February</option>
+          <option value="03">March</option>
+          <option value="04">April</option>
+          <option value="05">May</option>
+          <option value="06">June</option>
+          <option value="07">July</option>
+          <option value="08">August</option>
+          <option value="09">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+      </div>
 
-    <div class="input-group">
-      <label>KPI Year</label>
-      <select id="kpiYear" onchange="renderKPIs()"></select>
+      <div class="input-group">
+        <label>KPI Year</label>
+        <select id="kpiYear" onchange="renderKPIs()"></select>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- KPI CARDS -->
-<div class="kpi-grid" id="kpiSection">
-  <div class="kpi-card">
-    <div class="kpi-title">Total Groups</div>
-    <div class="kpi-value" id="kpiGroups">0</div>
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpiSection">
+    <div class="kpi-card">
+      <div class="kpi-title">Total Groups</div>
+      <div class="kpi-value" id="kpiGroups">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Active Tenants</div>
+      <div class="kpi-value" id="kpiActiveTenants">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Inactive Tenants</div>
+      <div class="kpi-value" id="kpiInactiveTenants">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Expected Monthly Room Rent</div>
+      <div class="kpi-value" id="kpiExpectedRoomRent">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Collected Room Rent</div>
+      <div class="kpi-value" id="kpiCollectedRoomRent">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Pending Room Rent</div>
+      <div class="kpi-value" id="kpiPendingRoomRent">0</div>
+    </div>
   </div>
-  <div class="kpi-card">
-    <div class="kpi-title">Active Tenants</div>
-    <div class="kpi-value" id="kpiActiveTenants">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-title">Inactive Tenants</div>
-    <div class="kpi-value" id="kpiInactiveTenants">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-title">Expected Monthly Room Rent</div>
-    <div class="kpi-value" id="kpiExpectedRoomRent">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-title">Collected Room Rent</div>
-    <div class="kpi-value" id="kpiCollectedRoomRent">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-title">Pending Room Rent</div>
-    <div class="kpi-value" id="kpiPendingRoomRent">0</div>
-  </div>
+
 </div>
 
   <div class="grid-2">
@@ -653,19 +661,26 @@ html {
     <h3>Tenants</h3>
 
     <div class="filter-box-2">
-      <div class="input-group">
-        <label>Filter by Group</label>
-        <select id="tenantGroupFilter" onchange="applyTenantFilters()"></select>
-      </div>
-      <div class="input-group">
-        <label>Filter by Status</label>
-        <select id="tenantStatusFilter" onchange="applyTenantFilters()">
-          <option value="">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-        </select>
-      </div>
-    </div>
+  <div class="input-group">
+    <label>Filter by Group</label>
+    <select id="tenantGroupFilter" onchange="applyTenantFilters()"></select>
+  </div>
+
+  <div class="input-group">
+    <label>Filter by Status</label>
+    <select id="tenantStatusFilter" onchange="applyTenantFilters()">
+      <option value="">All Status</option>
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+  </div>
+
+  <!-- ✅ NEW -->
+  <div class="input-group">
+    <label>Payment Month</label>
+    <input id="tenantPaymentMonth" type="month" onchange="applyTenantFilters()">
+  </div>
+</div>
 
     <div class="button-row">
       <button class="muted" onclick="clearTenantFilters()">Reset Tenant Filters</button>
@@ -754,6 +769,18 @@ html {
 </div>
 
 <script>
+  function resetKpiFilters(){
+  const now = new Date();
+
+  const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+  const currentYear = now.getFullYear();
+
+  document.getElementById("kpiMonth").value = currentMonth;
+  document.getElementById("kpiYear").value = currentYear;
+
+  renderKPIs();
+  }
+
   function populatePaymentYearDropdown(){
   const yearSelect = document.getElementById("paymentForYear");
   const currentYear = new Date().getFullYear();
@@ -768,16 +795,22 @@ html {
 }
 
   function populateReportYearDropdown(){
-  const yearSelect = document.getElementById("reportYear");
-  const currentYear = new Date().getFullYear();
+    const reportYear = document.getElementById("reportYear");
+    const kpiYear = document.getElementById("kpiYear");
 
-  let options = "";
-  for(let i = currentYear - 5; i <= currentYear + 2; i++){
-    options += `<option value="${i}">${i}</option>`;
-  }
+    const currentYear = new Date().getFullYear();
 
-  yearSelect.innerHTML = options;
-  yearSelect.value = currentYear;
+    let options = "";
+    for(let i = currentYear - 5; i <= currentYear + 2; i++){
+      options += `<option value="${i}">${i}</option>`;
+    }
+
+    // ✅ Apply to BOTH
+    reportYear.innerHTML = options;
+    kpiYear.innerHTML = options;
+
+    reportYear.value = currentYear;
+    kpiYear.value = currentYear;
   }
 
 /* =========================
@@ -1339,21 +1372,33 @@ function applyTenantFilters(){
   const groupFilter = document.getElementById("tenantGroupFilter")?.value || "";
   const statusFilter = document.getElementById("tenantStatusFilter")?.value || "";
 
-  // Always start from full dataset
+  // ✅ NEW
+  const paymentMonth = document.getElementById("tenantPaymentMonth")?.value || "";
+
   filteredTenants = [...tenantsData];
 
-  // Apply group filter (safe check)
+  // Group filter
   if(groupFilter !== ""){
     filteredTenants = filteredTenants.filter(t => String(t.group_id) === String(groupFilter));
   }
 
-  // Apply status filter (safe logic)
+  // Status filter
   if(statusFilter !== ""){
     if(statusFilter === "Active"){
       filteredTenants = filteredTenants.filter(t => t.is_active === true);
     }else if(statusFilter === "Inactive"){
       filteredTenants = filteredTenants.filter(t => t.is_active === false);
     }
+  }
+
+  // ✅ NEW: Month filter (core logic)
+  if(paymentMonth){
+    filteredTenants = filteredTenants.filter(t => {
+      return transactionsData.some(tx =>
+        tx.tenant_id === t.id &&
+        tx.payment_for_month === paymentMonth
+      );
+    });
   }
 
   tenantCurrentPage = 1;
