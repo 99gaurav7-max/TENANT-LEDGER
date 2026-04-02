@@ -697,8 +697,8 @@ html {
     <label>Filter by Status</label>
     <select id="tenantStatusFilter" onchange="applyTenantFilters()">
       <option value="">All Status</option>
-      <option value="Active">Active</option>
-      <option value="Inactive">Inactive</option>
+      <option value="Paid">Paid</option>
+      <option value="Unpaid">Unpaid</option>
     </select>
   </div>
 
@@ -1494,34 +1494,31 @@ function applyTenantFilters(){
   const groupFilter = document.getElementById("tenantGroupFilter")?.value || "";
   const statusFilter = document.getElementById("tenantStatusFilter")?.value || "";
 
-  // ✅ NEW
-  const paymentMonth = document.getElementById("tenantPaymentMonth")?.value || "";
+  const month = getSelectedMonth("tenantPaymentMonth");
 
   filteredTenants = [...tenantsData];
 
-  // Group filter
+  // ✅ Group filter
   if(groupFilter !== ""){
     filteredTenants = filteredTenants.filter(t => String(t.group_id) === String(groupFilter));
   }
 
-  // Status filter
+  // ✅ Status filter (Paid / Unpaid based on summary)
   if(statusFilter !== ""){
-    if(statusFilter === "Active"){
-      filteredTenants = filteredTenants.filter(t => t.is_active === true);
-    }else if(statusFilter === "Inactive"){
-      filteredTenants = filteredTenants.filter(t => t.is_active === false);
-    }
-  }
-
-  // ✅ NEW: Month filter (core logic)
-  if(paymentMonth){
     filteredTenants = filteredTenants.filter(t => {
-      return transactionsData.some(tx =>
-        tx.tenant_id === t.id &&
-        tx.payment_for_month === paymentMonth
-      );
+
+      const summary = tenantSummaryByMonth(t.id, month);
+
+      const isPaid =
+        summary.roomRent > 0 &&
+        summary.electricity > 0 &&
+        summary.water > 0;
+
+      return statusFilter === "Paid" ? isPaid : !isPaid;
     });
   }
+
+  // ❌ REMOVED WRONG MONTH FILTER (important)
 
   tenantCurrentPage = 1;
   renderTenantsTable();
