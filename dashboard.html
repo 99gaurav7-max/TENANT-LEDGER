@@ -775,16 +775,27 @@ html {
 </div>
 
 <script>
+  function resetReportFilters(){
+    const now = new Date();
+
+    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const currentYear = now.getFullYear();
+
+    // ✅ Reset report dropdowns
+    document.getElementById("reportMonth").value = currentMonth;
+    document.getElementById("reportYear").value = currentYear;
+  }
+  
   function resetKpiFilters(){
-  const now = new Date();
+    const now = new Date();
 
-  const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
-  const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const currentYear = now.getFullYear();
 
-  document.getElementById("kpiMonth").value = currentMonth;
-  document.getElementById("kpiYear").value = currentYear;
+    document.getElementById("kpiMonth").value = currentMonth;
+    document.getElementById("kpiYear").value = currentYear;
 
-  renderKPIs();
+    renderKPIs();
   }
 
   function populatePaymentYearDropdown(){
