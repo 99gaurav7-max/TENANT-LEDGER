@@ -1282,7 +1282,9 @@ function renderKPIs(){
   const activeTenants = tenantsData.filter(t => t.is_active);
   const inactiveTenants = tenantsData.filter(t => !t.is_active);
 
-  const expectedMonthlyRoomRent = tenantsData.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
+  const expectedMonthlyRoomRent = groupsData.reduce(
+  (sum, g) => sum + Number(g.rent_amount || 0),
+  0);
   
   // ✅ Get selected KPI month/year
   const kpiMonth = document.getElementById("kpiMonth").value;
