@@ -1397,15 +1397,14 @@ function getGroupSummaryByMonth(groupId, month){
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
-  // ✅ Use filtered data if filters applied
-  const dataToRender = (filteredGroups && filteredGroups.length) ? filteredGroups : groupsData;
+  const dataToRender = groupsData; // ALWAYS show all groups
 
   if(!dataToRender.length){
     table.innerHTML = `<tr><td>No groups found.</td></tr>`;
     return;
   }
 
-  // ✅ Get correct month (selected OR current)
+  // ✅ Always use selected OR current month
   const month = getSelectedMonth("groupPaymentMonth");
 
   table.innerHTML =
@@ -1419,15 +1418,14 @@ function renderGroupsTable(){
     </tr>` +
     dataToRender.map(g => {
 
-      // ✅ Correct summary (FIXED CORE)
+      // ✅ Correct summary
       const summary = getGroupSummaryByMonth(g.id, month);
 
-      // ✅ Expected rent = sum of tenant rents (matches PDF)
-      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
-      const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
+      // ✅ FIX: Use group rent directly (NOT tenants sum)
+      const expectedRent = Number(g.rent_amount || 0);
 
       const isPaid =
-        summary.roomRentPaid >= totalExpectedRent &&
+        summary.roomRentPaid >= expectedRent &&
         summary.electricityPaid > 0 &&
         summary.waterPaid > 0;
 
@@ -1438,7 +1436,7 @@ function renderGroupsTable(){
       return `
       <tr>
         <td>${g.group_name}</td>
-        <td>${formatMoney(totalExpectedRent)}</td>
+        <td>${formatMoney(expectedRent)}</td>
         <td>${formatMoney(summary.roomRentPaid)}</td>
         <td>${formatMoney(summary.electricityPaid)}</td>
         <td>${formatMoney(summary.waterPaid)}</td>
