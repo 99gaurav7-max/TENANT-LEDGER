@@ -1947,7 +1947,8 @@ function downloadMonthlyPdfReport(){
       const waterPaid = tenantTx.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
 
       // 🔹 Expected rent
-      const expectedRent = Number(t.rent_amount || 0);
+      const group = groupsData.find(g => g.id === t.group_id);
+      const expectedRent = Number(group?.rent_amount || 0);
 
       // 🔹 Correct status logic (same as group logic)
       const status = (
@@ -1965,7 +1966,7 @@ function downloadMonthlyPdfReport(){
         t.phone || "-",
         activeStatus, // ✅ NEW COLUMN
         formatMoney(t.security_deposit),
-        formatMoney(t.rent_amount || 0),
+        formatMoney(expectedRent),
         formatMoney(roomRentPaid),
         formatMoney(electricityPaid),
         formatMoney(waterPaid),
