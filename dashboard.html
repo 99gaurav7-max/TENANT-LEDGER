@@ -796,25 +796,31 @@ html {
 </div>
 
 <script>
-  function applyGroupFilters(){
+ function applyGroupFilters(){
   const paymentMonth = document.getElementById("groupPaymentMonth")?.value || "";
   const statusFilter = document.getElementById("groupStatusFilter")?.value || "";
 
   filteredGroups = [...groupsData];
 
-  // ✅ Month filter
+  // ✅ FIXED: Month filter (correct logic using tenants)
   if(paymentMonth){
     filteredGroups = filteredGroups.filter(g => {
-      return transactionsData.some(tx =>
-        tx.group_id === g.id &&
-        tx.payment_for_month === paymentMonth
+
+      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
+
+      return groupTenants.some(t =>
+        transactionsData.some(tx =>
+          tx.tenant_id === t.id &&
+          tx.payment_for_month === paymentMonth
+        )
       );
     });
   }
 
-  // ✅ Status filter
+  // ✅ FIXED: Status filter
   if(statusFilter){
     filteredGroups = filteredGroups.filter(g => {
+
       const summary = getGroupSummary(g.id);
 
       const groupTenants = tenantsData.filter(t => t.group_id === g.id);
@@ -1356,7 +1362,10 @@ function getGroupCurrentMonthSummary(groupId){
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
-  if(!groupsData.length){
+  // ✅ Use filteredGroups if exists, else fallback
+  const dataToRender = (filteredGroups && filteredGroups.length) ? filteredGroups : groupsData;
+
+  if(!dataToRender.length){
     table.innerHTML = `<tr><td>No groups found.</td></tr>`;
     return;
   }
@@ -1365,26 +1374,61 @@ function renderGroupsTable(){
     `<tr>
       <th>Group</th>
       <th>Monthly Room Rent</th>
-      <th>Room Rent Paid (Current Month)</th>
-      <th>Electricity Paid (Current Month)</th>
-      <th>Water Paid (Current Month)</th>
+      <th>Room Rent Paid (Selected Month)</th>
+      <th>Electricity Paid (Selected Month)</th>
+      <th>Water Paid (Selected Month)</th>
       <th>Status</th>
     </tr>` +
-    groupsData.map(g => {
-      const summary = getGroupCurrentMonthSummary(g.id);
+    dataToRender.map(g => {
+
+      // ✅ Get selected month
+      const selectedMonth = document.getElementById("groupPaymentMonth")?.value;
+
+      // ✅ Get summary based on selected month OR fallback
+      let summary;
+
+      if(selectedMonth){
+        summary = {
+          roomRentPaid: 0,
+          electricityPaid: 0,
+          waterPaid: 0
+        };
+
+        const groupTenants = tenantsData.filter(t => t.group_id === g.id);
+
+        groupTenants.forEach(t => {
+          transactionsData.forEach(tx => {
+            if(tx.tenant_id === t.id && tx.payment_for_month === selectedMonth){
+              if(tx.bill_type === "Room Rent") summary.roomRentPaid += Number(tx.amount || 0);
+              if(tx.bill_type === "Electricity Bill") summary.electricityPaid += Number(tx.amount || 0);
+              if(tx.bill_type === "Water Bill") summary.waterPaid += Number(tx.amount || 0);
+            }
+          });
+        });
+
+      } else {
+        // fallback to current month logic
+        summary = getGroupCurrentMonthSummary(g.id);
+      }
+
+      // ✅ Correct expected rent (sum of tenants)
+      const groupTenants = tenantsData.filter(t => t.group_id === g.id);
+      const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
+
       const isPaid =
-        summary.roomRentPaid >= Number(g.rent_amount || 0) &&
+        summary.roomRentPaid >= totalExpectedRent &&
         summary.electricityPaid > 0 &&
         summary.waterPaid > 0;
 
+      // ✅ FIXED STATUS (Unpaid instead of Pending)
       const status = isPaid
         ? `<span class="badge badge-green">Paid</span>`
-        : `<span class="badge badge-red">Pending</span>`;
+        : `<span class="badge badge-red">Unpaid</span>`;
 
       return `
       <tr>
         <td>${g.group_name}</td>
-        <td>${formatMoney(g.rent_amount)}</td>
+        <td>${formatMoney(totalExpectedRent)}</td>
         <td>${formatMoney(summary.roomRentPaid)}</td>
         <td>${formatMoney(summary.electricityPaid)}</td>
         <td>${formatMoney(summary.waterPaid)}</td>
