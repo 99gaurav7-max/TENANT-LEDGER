@@ -1258,8 +1258,10 @@ async function loadData(){
   renderKPIs();
   populateDropdowns();
   renderGroupsTable();
-  applyTenantFilters();
-  applyTransactionFilters();
+  filteredTenants = [...tenantsData];
+  filteredTransactions = [...transactionsData];
+  renderTenantsTable();
+  renderTransactionsTable();
 }
 
 function renderKPIs(){
@@ -1528,6 +1530,8 @@ function renderTenantsTable(){
   const start = (tenantCurrentPage - 1) * TENANTS_PER_PAGE;
   const paged = filteredTenants.slice(start, start + TENANTS_PER_PAGE);
 
+  const selectedMonthInput = document.getElementById("tenantPaymentMonth")?.value || "";
+
   table.innerHTML =
     `<tr>
       <th>Name</th>
@@ -1536,19 +1540,32 @@ function renderTenantsTable(){
       <th>Active From</th>
       <th>Months Active</th>
       <th>Security Deposit</th>
-      <th>Room Rent (Current Month)</th>
-      <th>Electricity (Current Month)</th>
-      <th>Water (Current Month)</th>
+      <th>Room Rent</th>
+      <th>Electricity</th>
+      <th>Water</th>
       <th>Last Payment Date</th>
       <th>Status</th>
     </tr>` +
     paged.map(t => {
+
       const month = getSelectedMonth("tenantPaymentMonth");
       const breakdown = tenantSummaryByMonth(t.id, month);
       const latestPayment = tenantLatestPaymentDate(t.id);
-      const statusBadge = t.is_active
-        ? `<span class="badge badge-green">Active</span>`
-        : `<span class="badge badge-yellow">Inactive</span>`;
+
+      let statusBadge = "";
+
+      if(!selectedMonthInput){
+        statusBadge = `<span class="badge badge-yellow">Select month</span>`;
+      }else{
+        const isPaid =
+          breakdown.roomRent > 0 &&
+          breakdown.electricity > 0 &&
+          breakdown.water > 0;
+
+        statusBadge = isPaid
+          ? `<span class="badge badge-green">Paid</span>`
+          : `<span class="badge badge-red">Unpaid</span>`;
+      }
 
       return `
       <tr>
@@ -1568,7 +1585,6 @@ function renderTenantsTable(){
 
   document.getElementById("tenantPageInfo").innerText = `Page ${tenantCurrentPage} of ${totalPages}`;
 }
-
 function applyTransactionFilters(){
   const groupFilter = document.getElementById("txGroupFilter").value;
   const tenantFilter = document.getElementById("txTenantFilter").value;
