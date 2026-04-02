@@ -1914,8 +1914,30 @@ function downloadMonthlyPdfReport(){
     doc.autoTable({
       startY: 38,
       head: [["Group", "Monthly Room Rent", "Room Rent Paid", "Electricity Paid", "Water Paid", "Status"]],
-      body: groupRows
-    });
+      body: groupRows,
+
+      styles: {
+      fontSize: 9,
+      cellPadding: 3
+      },
+
+      headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: 255
+      },
+
+      didParseCell: function (data) {
+
+      // Status column = index 5
+      if (data.column.index === 5 && data.cell.section === 'body') {
+        if (data.cell.raw === "Paid") {
+        data.cell.styles.textColor = [34, 197, 94]; // green
+        } else {
+          data.cell.styles.textColor = [245, 158, 11]; // orange
+        }
+      }
+  }
+});
 
     /* =========================
        SORT TENANTS (GROUP → NAME)
