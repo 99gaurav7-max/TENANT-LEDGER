@@ -1589,23 +1589,29 @@ function applyTransactionFilters(){
   const billTypeFilter = document.getElementById("txBillTypeFilter").value;
   const paymentModeFilter = document.getElementById("txPaymentModeFilter").value;
 
-  // ✅ NEW
-  const paymentMonth = document.getElementById("txPaymentMonth")?.value || "";
+  // ✅ FIX: proper month handling
+  const paymentMonthInput = document.getElementById("txPaymentMonth");
+  const paymentMonth = paymentMonthInput && paymentMonthInput.value ? paymentMonthInput.value : null;
 
   filteredTransactions = [...transactionsData];
 
+  // ✅ Group filter (already correct)
   if(groupFilter){
     const groupTenants = tenantsData
       .filter(t => String(t.group_id) === String(groupFilter))
       .map(t => t.id);
 
     filteredTransactions = filteredTransactions.filter(tx =>
-    groupTenants.includes(tx.tenant_id)
+      groupTenants.includes(tx.tenant_id)
     );
   }
+
+  // Tenant filter
   if(tenantFilter){
     filteredTransactions = filteredTransactions.filter(tx => tx.tenant_id === tenantFilter);
   }
+
+  // Date filters
   if(dateFrom){
     filteredTransactions = filteredTransactions.filter(tx => tx.payment_date >= dateFrom);
   }
@@ -1613,16 +1619,20 @@ function applyTransactionFilters(){
     filteredTransactions = filteredTransactions.filter(tx => tx.payment_date <= dateTo);
   }
 
-  // ✅ NEW FILTER (core addition)
-  if(paymentMonth){
-    filteredTransactions = filteredTransactions.filter(tx => 
-      tx.payment_for_month === paymentMonth
-    );
+  // ✅ FIXED month filter (with normalization)
+  if(paymentMonth !== null){
+    filteredTransactions = filteredTransactions.filter(tx => {
+      const txMonth = String(tx.payment_for_month).padStart(7, "0");
+      return txMonth === String(paymentMonth);
+    });
   }
 
+  // Bill type
   if(billTypeFilter){
     filteredTransactions = filteredTransactions.filter(tx => tx.bill_type === billTypeFilter);
   }
+
+  // Payment mode
   if(paymentModeFilter){
     filteredTransactions = filteredTransactions.filter(tx => tx.payment_mode === paymentModeFilter);
   }
