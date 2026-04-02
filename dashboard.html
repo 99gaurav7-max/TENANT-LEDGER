@@ -796,6 +796,30 @@ html {
 </div>
 
 <script>
+  function tenantSummaryByMonth(tenantId, month){
+    const rows = transactionsData.filter(tx =>
+      tx.tenant_id === tenantId &&
+      tx.payment_for_month === month
+    );
+
+    return {
+      roomRent: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
+      electricity: rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0),
+      water: rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0)
+    };
+  }
+  
+  function getSelectedMonth(globalInputId){
+    const input = document.getElementById(globalInputId)?.value;
+
+    if(input){
+      return input; // already YYYY-MM
+    }
+
+    // fallback → current month
+    return new Date().toISOString().slice(0, 7);
+  }
+  
  function applyGroupFilters(){
   const paymentMonth = document.getElementById("groupPaymentMonth")?.value || "";
   const statusFilter = document.getElementById("groupStatusFilter")?.value || "";
@@ -821,7 +845,8 @@ html {
   if(statusFilter){
     filteredGroups = filteredGroups.filter(g => {
 
-      const summary = getGroupSummary(g.id);
+      const month = getSelectedMonth("groupPaymentMonth");
+      const summary = getGroupSummaryByMonth(g.id, month);
 
       const groupTenants = tenantsData.filter(t => t.group_id === g.id);
       const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
@@ -1249,7 +1274,6 @@ async function loadData(){
   renderKPIs();
   populateDropdowns();
   renderGroupsTable();
-  renderUnpaidTenantTable();
   applyTenantFilters();
   applyTransactionFilters();
 }
@@ -1258,7 +1282,7 @@ function renderKPIs(){
   const activeTenants = tenantsData.filter(t => t.is_active);
   const inactiveTenants = tenantsData.filter(t => !t.is_active);
 
-  const expectedMonthlyRoomRent = groupsData.reduce((sum, g) => sum + Number(g.rent_amount || 0), 0);
+  const expectedMonthlyRoomRent = tenantsData.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
   
   // ✅ Get selected KPI month/year
   const kpiMonth = document.getElementById("kpiMonth").value;
@@ -1345,30 +1369,41 @@ function transactionAmountDisplay(tx){
   return 0;
 }
 
-function getGroupCurrentMonthSummary(groupId){
-  const currentMonth = new Date().toISOString().slice(0, 7);
+function getGroupSummaryByMonth(groupId, month){
+  const groupTenants = tenantsData.filter(t => t.group_id === groupId);
 
-  const rows = transactionsData.filter(tx => 
-    tx.group_id === groupId && 
-    tx.payment_for_month === currentMonth
-  );
-  const roomRentPaid = rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0);
-  const electricityPaid = rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0);
-  const waterPaid = rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0);
+  let summary = {
+    roomRentPaid: 0,
+    electricityPaid: 0,
+    waterPaid: 0
+  };
 
-  return { roomRentPaid, electricityPaid, waterPaid };
+  groupTenants.forEach(t => {
+    transactionsData.forEach(tx => {
+      if(tx.tenant_id === t.id && tx.payment_for_month === month){
+        summary.roomRentPaid += Number(tx.room_rent_amount || 0);
+        summary.electricityPaid += Number(tx.electricity_bill_amount || 0);
+        summary.waterPaid += Number(tx.water_bill_amount || 0);
+      }
+    });
+  });
+
+  return summary;
 }
 
 function renderGroupsTable(){
   const table = document.getElementById("groupsTable");
 
-  // ✅ Use filteredGroups if exists, else fallback
+  // ✅ Use filtered data if filters applied
   const dataToRender = (filteredGroups && filteredGroups.length) ? filteredGroups : groupsData;
 
   if(!dataToRender.length){
     table.innerHTML = `<tr><td>No groups found.</td></tr>`;
     return;
   }
+
+  // ✅ Get correct month (selected OR current)
+  const month = getSelectedMonth("groupPaymentMonth");
 
   table.innerHTML =
     `<tr>
@@ -1381,37 +1416,10 @@ function renderGroupsTable(){
     </tr>` +
     dataToRender.map(g => {
 
-      // ✅ Get selected month
-      const selectedMonth = document.getElementById("groupPaymentMonth")?.value;
+      // ✅ Correct summary (FIXED CORE)
+      const summary = getGroupSummaryByMonth(g.id, month);
 
-      // ✅ Get summary based on selected month OR fallback
-      let summary;
-
-      if(selectedMonth){
-        summary = {
-          roomRentPaid: 0,
-          electricityPaid: 0,
-          waterPaid: 0
-        };
-
-        const groupTenants = tenantsData.filter(t => t.group_id === g.id);
-
-        groupTenants.forEach(t => {
-          transactionsData.forEach(tx => {
-            if(tx.tenant_id === t.id && tx.payment_for_month === selectedMonth){
-              if(tx.bill_type === "Room Rent") summary.roomRentPaid += Number(tx.amount || 0);
-              if(tx.bill_type === "Electricity Bill") summary.electricityPaid += Number(tx.amount || 0);
-              if(tx.bill_type === "Water Bill") summary.waterPaid += Number(tx.amount || 0);
-            }
-          });
-        });
-
-      } else {
-        // fallback to current month logic
-        summary = getGroupCurrentMonthSummary(g.id);
-      }
-
-      // ✅ Correct expected rent (sum of tenants)
+      // ✅ Expected rent = sum of tenant rents (matches PDF)
       const groupTenants = tenantsData.filter(t => t.group_id === g.id);
       const totalExpectedRent = groupTenants.reduce((sum, t) => sum + Number(t.rent_amount || 0), 0);
 
@@ -1420,7 +1428,6 @@ function renderGroupsTable(){
         summary.electricityPaid > 0 &&
         summary.waterPaid > 0;
 
-      // ✅ FIXED STATUS (Unpaid instead of Pending)
       const status = isPaid
         ? `<span class="badge badge-green">Paid</span>`
         : `<span class="badge badge-red">Unpaid</span>`;
@@ -1473,21 +1480,6 @@ function renderUnpaidTenantTable(){
         <td><span class="badge badge-red">No Room Rent This Month</span></td>
       </tr>
     `).join("");
-}
-
-function tenantCurrentMonthBreakdown(tenantId){
-  const currentMonth = new Date().toISOString().slice(0, 7);
-
-  const rows = transactionsData.filter(tx => 
-    tx.tenant_id === tenantId && 
-    tx.payment_for_month === currentMonth
-  );
-
-  return {
-    roomRent: rows.reduce((sum, tx) => sum + Number(tx.room_rent_amount || 0), 0),
-    electricity: rows.reduce((sum, tx) => sum + Number(tx.electricity_bill_amount || 0), 0),
-    water: rows.reduce((sum, tx) => sum + Number(tx.water_bill_amount || 0), 0)
-  };
 }
 
 function tenantLatestPaymentDate(tenantId){
@@ -1565,7 +1557,8 @@ function renderTenantsTable(){
       <th>Status</th>
     </tr>` +
     paged.map(t => {
-      const breakdown = tenantCurrentMonthBreakdown(t.id);
+      const month = getSelectedMonth("tenantPaymentMonth");
+      const breakdown = tenantSummaryByMonth(t.id, month);
       const latestPayment = tenantLatestPaymentDate(t.id);
       const statusBadge = t.is_active
         ? `<span class="badge badge-green">Active</span>`
@@ -1604,7 +1597,13 @@ function applyTransactionFilters(){
   filteredTransactions = [...transactionsData];
 
   if(groupFilter){
-    filteredTransactions = filteredTransactions.filter(tx => tx.group_id === groupFilter);
+    const groupTenants = tenantsData
+      .filter(t => String(t.group_id) === String(groupFilter))
+      .map(t => t.id);
+
+    filteredTransactions = filteredTransactions.filter(tx =>
+    groupTenants.includes(tx.tenant_id)
+    );
   }
   if(tenantFilter){
     filteredTransactions = filteredTransactions.filter(tx => tx.tenant_id === tenantFilter);
