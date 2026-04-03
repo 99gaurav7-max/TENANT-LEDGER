@@ -1416,14 +1416,22 @@ function renderGroupsTable(){
       // ✅ FIX: Use group rent directly (NOT tenants sum)
       const expectedRent = Number(g.rent_amount || 0);
 
-      const isPaid =
-        summary.roomRentPaid >= expectedRent &&
-        summary.electricityPaid > 0 &&
-        summary.waterPaid > 0;
+      const selectedMonthInput = document.getElementById("groupPaymentMonth")?.value || "";
 
-      const status = isPaid
+      let status = "";
+
+      if(!selectedMonthInput){
+        status = `<span class="badge badge-yellow">Select month</span>`;
+      }else{
+      const isPaid =
+      summary.roomRentPaid >= expectedRent &&
+      summary.electricityPaid > 0 &&
+      summary.waterPaid > 0;
+
+      status = isPaid
         ? `<span class="badge badge-green">Paid</span>`
         : `<span class="badge badge-red">Unpaid</span>`;
+      }
 
       return `
       <tr>
